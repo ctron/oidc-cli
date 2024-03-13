@@ -8,7 +8,6 @@ use std::path::PathBuf;
 #[command(rename_all_env = "SNAKE_CASE")]
 pub struct GetToken {
     /// Name of the token to get
-    #[arg(short, long, env)]
     pub name: String,
 
     #[arg(from_global)]

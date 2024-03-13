@@ -22,7 +22,6 @@ impl Create {
 #[command(rename_all_env = "SNAKE_CASE")]
 pub struct CreateCommon {
     /// Name of the client, used to locally identify it
-    #[arg(short, long, env)]
     pub name: String,
 
     /// Overwrite and existing client with the same name
