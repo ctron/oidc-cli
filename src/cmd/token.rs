@@ -25,6 +25,10 @@ pub struct GetToken {
     /// Get the refresh token, conflicts with 'access' and 'id'
     #[arg(short, long, conflicts_with_all = ["access", "id"])]
     pub refresh: bool,
+
+    /// Prefix with "Bearer ", for using it as a `Authorization` header value
+    #[arg(short, long)]
+    pub bearer: bool,
 }
 
 impl GetToken {
@@ -37,23 +41,23 @@ impl GetToken {
 
         let token = get_token(config).await?;
 
-        if self.id {
-            println!(
-                "{}",
-                token
-                    .id_token
-                    .ok_or_else(|| anyhow!("ID token not available"))?
-            );
+        let token = if self.id {
+            token
+                .id_token
+                .ok_or_else(|| anyhow!("ID token not available"))?
         } else if self.refresh {
-            println!(
-                "{}",
-                token
-                    .refresh_token
-                    .ok_or_else(|| anyhow!("refresh token not available"))?
-            );
+            token
+                .refresh_token
+                .ok_or_else(|| anyhow!("refresh token not available"))?
         } else {
             // access is the default
-            println!("{}", token.access_token);
+            token.access_token
+        };
+
+        if self.bearer {
+            println!("Bearer {token}");
+        } else {
+            println!("{token}");
         }
 
         Ok(())

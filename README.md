@@ -21,3 +21,9 @@ Then, get an access token:
 ```bash
 oidc token --name test
 ```
+
+Or combine it with e.g. HTTPie:
+
+```bash
+http example.com/api "Authorization:$(oidc token --name test --bearer)"
+```
