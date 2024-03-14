@@ -1,5 +1,7 @@
 # OIDC CLI
 
+[![CI](https://github.com/ctron/oidc-cli/actions/workflows/ci.yaml/badge.svg)](https://github.com/ctron/oidc-cli/actions/workflows/ci.yaml)
+
 > A command line tool for working with OIDC
 
 ## Installation
