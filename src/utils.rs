@@ -1,11 +1,11 @@
 use std::fmt::{Display, Formatter};
 
 /// A way to show something, not an alternate placeholder.
-pub struct OrNone<T>(pub Option<T>)
+pub struct OrNone<'a, T>(pub &'a Option<T>)
 where
     T: Display;
 
-impl<T> Display for OrNone<T>
+impl<'a, T> Display for OrNone<'a, T>
 where
     T: Display,
 {

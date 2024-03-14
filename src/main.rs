@@ -3,7 +3,9 @@
 
 mod cmd;
 mod config;
+mod http;
 mod oidc;
+mod server;
 mod utils;
 
 use crate::cmd::Command;
@@ -35,15 +37,16 @@ struct Cli {
 fn init_log(cli: &Cli) -> anyhow::Result<()> {
     let level = match (cli.quiet, cli.verbose) {
         (true, _) => LevelFilter::Error,
-        (false, 0) => LevelFilter::Info,
-        (false, 1) => LevelFilter::Debug,
+        (false, 0) => LevelFilter::Warn,
+        (false, 1) => LevelFilter::Info,
+        (false, 2) => LevelFilter::Debug,
         (false, _) => LevelFilter::Trace,
     };
 
     TermLogger::init(
         level,
         Config::default(),
-        // all logging goes to stderr, as we actually output data to stdout
+        // all logging goes to stderr. stdout is reserved for actual output of the command.
         TerminalMode::Stderr,
         ColorChoice::Auto,
     )?;

@@ -13,7 +13,13 @@ cargo install oidc-cli
 Creating a new (confidential) client:
 
 ```bash
-oidc create confidential my-client -issuer https://example.com/realm --client-id foo --client-secret bar
+oidc create confidential my-client --issuer https://example.com/realm --client-id foo --client-secret bar
+```
+
+Creating a new (public) client:
+
+```bash
+oidc create public my-client --issuer https://example.com/realm --client-id foo
 ```
 
 Then, get an access token:

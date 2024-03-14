@@ -1,8 +1,11 @@
 use anyhow::{anyhow, Context};
-use std::collections::BTreeMap;
-use std::fs::OpenOptions;
-use std::io::{BufReader, BufWriter, ErrorKind};
-use std::path::{Path, PathBuf};
+use openid::Bearer;
+use std::{
+    collections::BTreeMap,
+    fs::OpenOptions,
+    io::{BufReader, BufWriter, ErrorKind},
+    path::{Path, PathBuf},
+};
 use url::Url;
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
@@ -71,9 +74,9 @@ impl Config {
         Ok(())
     }
 
-    /// Get a client by name
-    pub fn by_name(&self, name: &str) -> Option<&Client> {
-        self.clients.get(name)
+    /// Get a mutable client by name
+    pub fn by_name_mut(&mut self, name: &str) -> Option<&mut Client> {
+        self.clients.get_mut(name)
     }
 }
 
@@ -81,6 +84,8 @@ impl Config {
 pub struct Client {
     pub issuer_url: Url,
     pub r#type: ClientType,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state: Option<ClientState>,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -89,4 +94,36 @@ pub enum ClientType {
         client_id: String,
         client_secret: String,
     },
+    Public {
+        client_id: String,
+    },
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct ClientState {
+    pub access_token: String,
+    pub id_token: Option<String>,
+    pub refresh_token: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub expires: Option<time::OffsetDateTime>,
+}
+
+impl TryFrom<Bearer> for ClientState {
+    type Error = anyhow::Error;
+
+    fn try_from(token: Bearer) -> Result<Self, Self::Error> {
+        let expires = token
+            .expires
+            .map(|exp| time::OffsetDateTime::from_unix_timestamp(exp.timestamp()))
+            .transpose()
+            .context("Unable to convert 'expires' timestamp from token")?;
+        Ok(ClientState {
+            access_token: token.access_token,
+            id_token: token.id_token,
+            refresh_token: token.refresh_token,
+            expires,
+        })
+    }
 }

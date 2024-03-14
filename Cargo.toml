@@ -23,6 +23,7 @@ pkg-fmt = "bin"
 
 [dependencies]
 anyhow = "1"
+chrono = "0.4"
 clap = { version = "4", features = ["derive", "env"] }
 directories = "5"
 log = "0.4"
@@ -31,5 +32,8 @@ reqwest = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
 simplelog = "0.12"
+time = { version = "0.3", features = ["serde-well-known"] }
 tokio = { version = "1.36", features = ["full"] }
 url = "2"
+
+actix-web = { version = "4", features = ["openssl"] }

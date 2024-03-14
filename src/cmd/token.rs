@@ -1,5 +1,5 @@
-use crate::config::Config;
-use crate::oidc::get_token;
+use crate::oidc::TokenResult;
+use crate::{config::Config, oidc::get_token};
 use anyhow::anyhow;
 use std::path::PathBuf;
 
@@ -32,13 +32,26 @@ pub struct GetToken {
 
 impl GetToken {
     pub async fn run(self) -> anyhow::Result<()> {
-        let config = Config::load(self.config.as_deref())?;
+        let mut config = Config::load(self.config.as_deref())?;
 
-        let config = config
-            .by_name(&self.name)
+        let client = config
+            .by_name_mut(&self.name)
             .ok_or_else(|| anyhow!("unknown client '{}'", self.name))?;
 
-        let token = get_token(config).await?;
+        let token = get_token(client).await?;
+
+        let token = match token {
+            TokenResult::Refreshed(token) => {
+                log::info!("Got a refreshed token. Storing new state.");
+                // update client state
+                client.state = Some(token.clone());
+
+                config.store(self.config.as_deref())?;
+
+                token
+            }
+            TokenResult::Existing(token) => token,
+        };
 
         let token = if self.id {
             token
