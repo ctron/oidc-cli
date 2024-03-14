@@ -2,7 +2,6 @@ use anyhow::{anyhow, Context};
 use std::collections::BTreeMap;
 use std::fs::OpenOptions;
 use std::io::{BufReader, BufWriter, ErrorKind};
-use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 use url::Url;
 
@@ -61,6 +60,7 @@ impl Config {
         file.write(true).create(true).truncate(true);
         #[cfg(target_family = "unix")]
         {
+            use std::os::unix::fs::OpenOptionsExt;
             file.mode(0o600);
         }
 
