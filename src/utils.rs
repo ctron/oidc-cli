@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 
+/// A way to show something, not an alternate placeholder.
 pub struct OrNone<T>(pub Option<T>)
 where
     T: Display;
