@@ -39,6 +39,15 @@ jobs:
           - windows-latest
           - macos-latest
 
+        include:
+          - os: ubuntu-latest
+            install: |
+              sudo apt install -y libssl-dev
+          - os: windows-latest
+            install: |
+              echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+              vcpkg install openssl:x64-windows-static-md
+
     runs-on: ${{ matrix.os }}
 
     steps:
