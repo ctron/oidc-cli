@@ -36,3 +36,10 @@ simplelog = "0.12"
 time = { version = "0.3", features = ["serde-well-known"] }
 tokio = { version = "1.36", features = ["full"] }
 url = "2"
+
+openssl = "0.10" # transient dependency, required for vendoring
+
+[features]
+vendored = [
+    "openssl/vendored"
+]
