@@ -223,8 +223,10 @@ jobs:
           TAG: v${{ needs.init.outputs.version }}
         run: |
           OPTS=""
+
           if [[ "${{ needs.init.outputs.prerelease }}" == "true" ]]; then
             OPTS="${OPTS} -p"
           fi
+
           gh release create ${OPTS} --title "${{ needs.init.outputs.version }}" -F /tmp/changelog.md ${TAG} \
             $(find staging -type f)
