@@ -22,6 +22,7 @@ pkg-url = "{ repo }/releases/download/v{ version }/oidc-{ target }{ binary-ext }
 pkg-fmt = "bin"
 
 [dependencies]
+actix-web = { version = "4", features = ["openssl"] }
 anyhow = "1"
 chrono = "0.4"
 clap = { version = "4", features = ["derive", "env"] }
@@ -35,5 +36,3 @@ simplelog = "0.12"
 time = { version = "0.3", features = ["serde-well-known"] }
 tokio = { version = "1.36", features = ["full"] }
 url = "2"
-
-actix-web = { version = "4", features = ["openssl"] }
