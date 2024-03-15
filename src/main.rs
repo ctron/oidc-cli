@@ -19,11 +19,17 @@ use std::process::ExitCode;
 #[command(about, author, version, rename_all_env = "SNAKE_CASE")]
 struct Cli {
     /// Be quiet, conflicts with 'verbose'
-    #[arg(short, long, env, global = true, conflicts_with = "verbose")]
+    #[arg(
+        short,
+        long,
+        env = "OIDC_QUIET",
+        global = true,
+        conflicts_with = "verbose"
+    )]
     pub quiet: bool,
 
     /// Be more verbose, conflicts with 'quiet'
-    #[arg(short, long, env, global = true, action = clap::ArgAction::Count)]
+    #[arg(short, long, env = "OIDC_VERBOSE", global = true, action = clap::ArgAction::Count)]
     pub verbose: u8,
 
     /// Override config file
