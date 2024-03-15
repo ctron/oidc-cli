@@ -56,23 +56,32 @@ jobs:
           - x86_64-unknown-linux-gnu
           - aarch64-unknown-linux-musl
           - x86_64-unknown-linux-musl
+
           - x86_64-apple-darwin
           - aarch64-apple-darwin
+
           - x86_64-pc-windows-msvc
 
         include:
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-22.04
             cross: "true"
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-22.04
+            cross: "true"
           - target: x86_64-unknown-linux-musl
             os: ubuntu-22.04
             install: |
               sudo apt install -y musl-tools
+
           - target: x86_64-apple-darwin
             os: macos-12
           - target: aarch64-apple-darwin
             os: macos-12
             xcode: "true"
+
           - target: x86_64-pc-windows-msvc
             os: windows-2022
             exe: ".exe"
