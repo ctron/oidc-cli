@@ -6,9 +6,19 @@
 
 ## Installation
 
+From source with `cargo`:
+
 ```bash
 cargo install oidc-cli
 ```
+
+A binary with `cargo-binstall`:
+
+```bash
+cargo binstall oidc-cli
+```
+
+Download a released binary: https://github.com/ctron/oidc-cli/releases
 
 ## Example
 
