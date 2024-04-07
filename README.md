@@ -1,5 +1,7 @@
 # OIDC CLI
 
+[![crates.io](https://img.shields.io/crates/v/oidc-cli.svg)](https://crates.io/crates/oidc-cli)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/ctron/oidc-cli?sort=semver)](https://github.com/ctron/oidc-cli/releases)
 [![CI](https://github.com/ctron/oidc-cli/actions/workflows/ci.yaml/badge.svg)](https://github.com/ctron/oidc-cli/actions/workflows/ci.yaml)
 
 > A command line tool for working with OIDC
