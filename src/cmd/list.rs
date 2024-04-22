@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use time::macros::format_description;
 use time::OffsetDateTime;
 
+/// List configured clients
 #[derive(Debug, clap::Parser)]
 #[command(rename_all_env = "SNAKE_CASE")]
 pub struct List {
