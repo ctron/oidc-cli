@@ -59,13 +59,17 @@ pub async fn get_token(config: &Client) -> anyhow::Result<TokenResult> {
                 );
             };
 
-            let token = Bearer {
+            // we only need the `refresh_token`
+            let token = Box::new(Bearer {
                 access_token: state.access_token.clone(),
+                token_type: "".to_string(),
                 scope: None,
+                state: None,
                 refresh_token: Some(state.refresh_token.clone().ok_or_else(||anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?),
-                expires: None,
+                expires_in: None,
                 id_token: None,
-            };
+                extra: None,
+            });
 
             let token = client.refresh_token(token, None).await?;
 

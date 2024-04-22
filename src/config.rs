@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context};
+use num_traits::ToPrimitive;
 use openid::Bearer;
 use std::{
     collections::BTreeMap,
@@ -6,6 +7,7 @@ use std::{
     io::{BufReader, BufWriter, ErrorKind},
     path::{Path, PathBuf},
 };
+use time::Duration;
 use url::Url;
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
@@ -114,11 +116,9 @@ impl TryFrom<Bearer> for ClientState {
     type Error = anyhow::Error;
 
     fn try_from(token: Bearer) -> Result<Self, Self::Error> {
-        let expires = token
-            .expires
-            .map(|exp| time::OffsetDateTime::from_unix_timestamp(exp.timestamp()))
-            .transpose()
-            .context("Unable to convert 'expires' timestamp from token")?;
+        let expires = token.expires_in.map(|exp| {
+            time::OffsetDateTime::now_utc() + Duration::seconds(exp.to_i64().unwrap_or(i64::MAX))
+        });
         Ok(ClientState {
             access_token: token.access_token,
             id_token: token.id_token,
