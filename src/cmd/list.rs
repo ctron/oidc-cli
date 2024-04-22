@@ -54,14 +54,12 @@ impl List {
                             "[year]-[month]-[day] [hour]:[minute]:[second]Z"
                         ))?;
 
-                        let (prefix, color) = if rem.is_positive() {
-                            ("valid", Color::Green)
+                        let cell = if rem.is_positive() {
+                            Cell::new(format!("valid: {format_rem} ({expires})")).fg(Color::Green)
                         } else {
-                            ("expired", Color::Grey)
+                            Cell::new(format!("expired: {format_rem} ({expires})"))
+                                .fg(Color::DarkGrey)
                         };
-
-                        let cell =
-                            Cell::new(format!("{prefix}: {format_rem} ({expires})")).fg(color);
 
                         row.add_cell(cell);
                     }
