@@ -1,5 +1,5 @@
 use crate::config::{ClientType, Config};
-use comfy_table::{presets, Attribute, Cell, CellAlignment, Color, ContentArrangement, Row, Table};
+use comfy_table::{presets, Cell, CellAlignment, Color, ContentArrangement, Row, Table};
 use std::path::PathBuf;
 use time::macros::format_description;
 use time::OffsetDateTime;
@@ -54,14 +54,13 @@ impl List {
                         ))?;
 
                         let (prefix, color) = if rem.is_positive() {
-                            ("valid", Color::DarkGreen)
+                            ("valid", Color::Green)
                         } else {
                             ("expired", Color::Grey)
                         };
 
-                        let cell = Cell::new(format!("{prefix}: {format_rem} ({expires})"))
-                            .fg(color)
-                            .bg(Color::Black);
+                        let cell =
+                            Cell::new(format!("{prefix}: {format_rem} ({expires})")).fg(color);
 
                         row.add_cell(cell);
                     }
