@@ -1,8 +1,11 @@
-use crate::config::{ClientType, Config};
+use crate::{
+    claims::{AccessTokenClaims, RefreshTokenClaims},
+    config::{ClientType, Config},
+};
 use comfy_table::{presets, Cell, CellAlignment, Color, ContentArrangement, Row, Table};
+use openid::{biscuit::jws::Compact, CompactJson, Empty};
 use std::path::PathBuf;
-use time::macros::format_description;
-use time::OffsetDateTime;
+use time::{macros::format_description, OffsetDateTime};
 
 /// List configured clients
 #[derive(Debug, clap::Parser)]
@@ -10,6 +13,10 @@ use time::OffsetDateTime;
 pub struct List {
     #[arg(from_global)]
     pub config: Option<PathBuf>,
+
+    /// Show more details
+    #[arg(short, long)]
+    pub details: bool,
 }
 
 impl List {
@@ -20,7 +27,14 @@ impl List {
         table
             .load_preset(presets::ASCII_MARKDOWN)
             .set_content_arrangement(ContentArrangement::Dynamic)
-            .set_header(["Name", "Issuer", "Client", "Public", "Access Token"]);
+            .set_header([
+                "Name",
+                "Issuer",
+                "Client",
+                "Public",
+                "Access Token",
+                "Refresh Token",
+            ]);
 
         for (name, client) in config.clients {
             let mut row = Row::new();
@@ -39,31 +53,31 @@ impl List {
             }
 
             if let Some(state) = &client.state {
-                match state.expires {
-                    None => {
-                        row.add_cell("∞".into());
-                    }
-                    Some(expires) => {
-                        let rem = expires - OffsetDateTime::now_utc();
+                let access = self.token::<_, AccessTokenClaims>(&state.access_token, |token| {
+                    self.expiration(
+                        token
+                            .exp
+                            .and_then(|exp| OffsetDateTime::from_unix_timestamp(exp).ok()),
+                    )
+                });
 
-                        // truncate to seconds
-                        let format_rem = humantime::Duration::from(std::time::Duration::from_secs(
-                            rem.unsigned_abs().as_secs(),
-                        ));
-                        let expires = expires.format(format_description!(
-                            "[year]-[month]-[day] [hour]:[minute]:[second]Z"
-                        ))?;
+                row.add_cell(access);
 
-                        let cell = if rem.is_positive() {
-                            Cell::new(format!("valid: {format_rem} ({expires})")).fg(Color::Green)
-                        } else {
-                            Cell::new(format!("expired: {format_rem} ({expires})"))
-                                .fg(Color::DarkGrey)
-                        };
+                let refresh = state
+                    .refresh_token
+                    .as_ref()
+                    .map(|refresh| {
+                        self.token::<_, RefreshTokenClaims>(&refresh, |token| {
+                            self.expiration(
+                                token
+                                    .exp
+                                    .and_then(|exp| OffsetDateTime::from_unix_timestamp(exp).ok()),
+                            )
+                        })
+                    })
+                    .unwrap_or_else(|| Cell::new(""));
 
-                        row.add_cell(cell);
-                    }
-                }
+                row.add_cell(refresh);
             }
 
             table.add_row(row);
@@ -72,5 +86,51 @@ impl List {
         println!("{table}");
 
         Ok(())
+    }
+
+    /// Decode a token and call the function to extract cell information
+    ///
+    /// NOTE: The token is not being verified.
+    fn token<F, T>(&self, token: &str, f: F) -> Cell
+    where
+        F: FnOnce(T) -> Cell,
+        T: CompactJson,
+    {
+        let token = match Compact::<T, Empty>::new_encoded(&token).unverified_payload() {
+            Ok(token) => token,
+            Err(err) => return Cell::new(err.to_string()).fg(Color::Red),
+        };
+
+        f(token)
+    }
+
+    fn expiration(&self, expires: Option<OffsetDateTime>) -> Cell {
+        match expires {
+            None => "∞".into(),
+            Some(expires) => {
+                let rem = expires - OffsetDateTime::now_utc();
+
+                // truncate to seconds
+                let format_rem = humantime::Duration::from(std::time::Duration::from_secs(
+                    rem.unsigned_abs().as_secs(),
+                ));
+
+                let details = match self.details {
+                    true => match expires.format(format_description!(
+                        " ([year]-[month]-[day] [hour]:[minute]:[second]Z)"
+                    )) {
+                        Ok(format) => format,
+                        Err(err) => return Cell::new(err.to_string()).fg(Color::Red),
+                    },
+                    false => "".into(),
+                };
+
+                if rem.is_positive() {
+                    Cell::new(format!("valid: {format_rem}{details}")).fg(Color::Green)
+                } else {
+                    Cell::new(format!("expired: {format_rem}{details}")).fg(Color::DarkGrey)
+                }
+            }
+        }
     }
 }
