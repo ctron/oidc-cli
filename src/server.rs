@@ -1,4 +1,5 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer};
+use std::net::{Ipv6Addr, SocketAddr};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::{oneshot, Mutex};
@@ -42,10 +43,13 @@ async fn receive(
 }
 
 impl Server {
-    pub async fn new() -> anyhow::Result<Self> {
+    pub async fn new(port: Option<u16>) -> anyhow::Result<Self> {
         let (tx, rx) = oneshot::channel();
 
-        let acceptor = TcpListener::bind("[::1]:0").await?;
+        let port = port.unwrap_or_default();
+        let addr = SocketAddr::new(Ipv6Addr::LOCALHOST.into(), port);
+
+        let acceptor = TcpListener::bind(addr).await?;
         let acceptor = acceptor.into_std()?;
 
         let port = acceptor.local_addr()?.port();

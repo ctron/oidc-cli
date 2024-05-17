@@ -21,6 +21,10 @@ pub struct CreatePublic {
     /// The client ID
     #[arg(short = 'i', long)]
     pub client_id: String,
+
+    /// Force using a specific port for the local server
+    #[arg(short, long)]
+    pub port: Option<u16>,
 }
 
 impl CreatePublic {
@@ -36,7 +40,7 @@ impl CreatePublic {
             );
         }
 
-        let server = Server::new().await?;
+        let server = Server::new(self.port).await?;
         let redirect = format!("http://localhost:{}", server.port);
 
         let client = create_client().await?;
