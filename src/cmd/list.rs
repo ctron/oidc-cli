@@ -67,7 +67,7 @@ impl List {
                     .refresh_token
                     .as_ref()
                     .map(|refresh| {
-                        self.token::<_, RefreshTokenClaims>(&refresh, |token| {
+                        self.token::<_, RefreshTokenClaims>(refresh, |token| {
                             self.expiration(
                                 token
                                     .exp
@@ -96,7 +96,7 @@ impl List {
         F: FnOnce(T) -> Cell,
         T: CompactJson,
     {
-        let token = match Compact::<T, Empty>::new_encoded(&token).unverified_payload() {
+        let token = match Compact::<T, Empty>::new_encoded(token).unverified_payload() {
             Ok(token) => token,
             Err(err) => return Cell::new(err.to_string()).fg(Color::Red),
         };

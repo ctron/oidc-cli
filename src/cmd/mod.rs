@@ -1,5 +1,6 @@
 mod create;
 mod delete;
+mod inspect;
 mod list;
 mod token;
 
@@ -11,6 +12,7 @@ pub enum Command {
     Delete(delete::Delete),
     Token(token::GetToken),
     List(list::List),
+    Inspect(inspect::Inspect),
 }
 
 impl Command {
@@ -20,6 +22,7 @@ impl Command {
             Self::Delete(cmd) => cmd.run().await,
             Self::Token(cmd) => cmd.run().await,
             Self::List(cmd) => cmd.run().await,
+            Self::Inspect(cmd) => cmd.run().await,
         }
         .map(|()| ExitCode::SUCCESS)
     }
