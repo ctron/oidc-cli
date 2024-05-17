@@ -1,7 +1,7 @@
 use crate::config::Config;
 use std::path::PathBuf;
 
-/// Create a new client
+/// Delete a client
 #[derive(Debug, clap::Parser)]
 pub struct Delete {
     /// The name of the client to delete
