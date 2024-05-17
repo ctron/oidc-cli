@@ -33,6 +33,7 @@ directories = "5"
 humantime = "2"
 log = "0.4"
 num-traits = "0.2"
+open = "5"
 openid = "0.14"
 reqwest = "0.12"
 serde = { version = "1", features = ["derive"] }

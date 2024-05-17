@@ -25,6 +25,10 @@ pub struct CreatePublic {
     /// Force using a specific port for the local server
     #[arg(short, long)]
     pub port: Option<u16>,
+
+    /// Open the link automatically
+    #[arg(short, long)]
+    pub open: bool,
 }
 
 impl CreatePublic {
@@ -61,12 +65,18 @@ impl CreatePublic {
         println!(
             r#"
 
-Open the following URL in your browser and perform the interactive login process:
+Open the following URL in your browser and perform the interactive login process (use --open to do this automatically):
 
     {open}
 
 "#
         );
+
+        if let Err(err) = open::that(open.to_string()) {
+            log::warn!(
+                "Failed to open URL in browser. You can still copy the link from the console. Error: {err}"
+            );
+        }
 
         let result = server.receive_token().await?;
         let token = client.request_token(&result.code).await?;
