@@ -33,7 +33,7 @@ impl Inspect {
         let token = biscuit::Compact::decode(&token);
 
         for (n, part) in token.parts.into_iter().enumerate() {
-            print!("  Part #{n}:");
+            print!(" Part #{n}:");
             if let Err(err) = Self::inspect_part(part) {
                 println!("Unable to decode: {err}");
             }
