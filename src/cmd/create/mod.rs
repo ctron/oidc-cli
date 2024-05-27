@@ -24,8 +24,8 @@ pub struct CreateCommon {
     pub name: String,
 
     /// Overwrite and existing client with the same name
-    #[arg(long)]
-    pub ignore_existing: bool,
+    #[arg(short, long)]
+    pub force: bool,
 
     /// Skip fetching the initial token
     #[arg(long)]

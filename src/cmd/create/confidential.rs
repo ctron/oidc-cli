@@ -32,7 +32,7 @@ impl CreateConfidential {
 
         let mut config = Config::load(self.config.as_deref())?;
 
-        if !self.common.ignore_existing && config.clients.contains_key(&self.common.name) {
+        if !self.common.force && config.clients.contains_key(&self.common.name) {
             bail!(
                 "A client named '{}' already exists. You need to delete it first or use --ignore-existing",
                 self.common.name
