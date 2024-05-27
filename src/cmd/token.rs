@@ -1,4 +1,5 @@
 use crate::oidc::TokenResult;
+use crate::utils::inspect::inspect;
 use crate::{config::Config, oidc::get_token};
 use anyhow::anyhow;
 use std::path::PathBuf;
@@ -28,6 +29,10 @@ pub struct GetToken {
     /// Prefix with "Bearer ", for using it as a `Authorization` header value
     #[arg(short, long)]
     pub bearer: bool,
+
+    /// Inspect the token
+    #[arg(short = 'I', long, conflicts_with = "bearer")]
+    pub inspect: bool,
 }
 
 impl GetToken {
@@ -68,6 +73,8 @@ impl GetToken {
 
         if self.bearer {
             println!("Bearer {token}");
+        } else if self.inspect {
+            inspect(token)?;
         } else {
             println!("{token}");
         }

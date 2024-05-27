@@ -1,3 +1,5 @@
+pub mod inspect;
+
 use std::fmt::{Display, Formatter};
 
 /// A way to show something, not an alternate placeholder.
