@@ -1,6 +1,8 @@
-use crate::config::{Client, ClientState, ClientType};
-use crate::http::create_client;
-use crate::utils::OrNone;
+use crate::{
+    config::{Client, ClientState, ClientType},
+    http::create_client,
+    utils::OrNone,
+};
 use anyhow::{anyhow, bail};
 use openid::{Bearer, Discovered, StandardClaims};
 use time::OffsetDateTime;
@@ -10,17 +12,9 @@ pub enum TokenResult {
     Refreshed(ClientState),
 }
 
-pub async fn get_token(config: &Client) -> anyhow::Result<TokenResult> {
+/// Fetch a new token
+pub async fn fetch_token(config: &Client) -> anyhow::Result<TokenResult> {
     let client = create_client().await?;
-
-    if let Some(state) = &config.state {
-        log::debug!("Token expires: {}", OrNone(&state.expires));
-        if let Some(expires) = state.expires {
-            if expires > OffsetDateTime::now_utc() {
-                return Ok(TokenResult::Existing(state.clone()));
-            }
-        }
-    }
 
     match &config.r#type {
         ClientType::Confidential {
@@ -76,4 +70,18 @@ pub async fn get_token(config: &Client) -> anyhow::Result<TokenResult> {
             Ok(TokenResult::Refreshed(token.try_into()?))
         }
     }
+}
+
+/// Get the current token, or fetch a new one
+pub async fn get_token(config: &Client) -> anyhow::Result<TokenResult> {
+    if let Some(state) = &config.state {
+        log::debug!("Token expires: {}", OrNone(&state.expires));
+        if let Some(expires) = state.expires {
+            if expires > OffsetDateTime::now_utc() {
+                return Ok(TokenResult::Existing(state.clone()));
+            }
+        }
+    }
+
+    fetch_token(config).await
 }

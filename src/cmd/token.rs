@@ -1,6 +1,8 @@
-use crate::oidc::TokenResult;
-use crate::utils::inspect::inspect;
-use crate::{config::Config, oidc::get_token};
+use crate::{
+    config::Config,
+    oidc::{fetch_token, get_token, TokenResult},
+    utils::inspect::inspect,
+};
 use anyhow::anyhow;
 use std::path::PathBuf;
 
@@ -33,6 +35,10 @@ pub struct GetToken {
     /// Inspect the token
     #[arg(short = 'I', long, conflicts_with = "bearer")]
     pub inspect: bool,
+
+    /// Force a new token
+    #[arg(short, long)]
+    pub force: bool,
 }
 
 impl GetToken {
@@ -43,7 +49,10 @@ impl GetToken {
             .by_name_mut(&self.name)
             .ok_or_else(|| anyhow!("unknown client '{}'", self.name))?;
 
-        let token = get_token(client).await?;
+        let token = match self.force {
+            true => fetch_token(client).await?,
+            false => get_token(client).await?,
+        };
 
         let token = match token {
             TokenResult::Refreshed(token) => {
