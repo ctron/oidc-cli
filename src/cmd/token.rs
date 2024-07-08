@@ -1,5 +1,6 @@
 use crate::{
     config::Config,
+    http::HttpOptions,
     oidc::{fetch_token, get_token, TokenResult},
     utils::inspect::inspect,
 };
@@ -39,6 +40,9 @@ pub struct GetToken {
     /// Force a new token
     #[arg(short, long)]
     pub force: bool,
+
+    #[command(flatten)]
+    pub http: HttpOptions,
 }
 
 impl GetToken {
@@ -50,8 +54,8 @@ impl GetToken {
             .ok_or_else(|| anyhow!("unknown client '{}'", self.name))?;
 
         let token = match self.force {
-            true => fetch_token(client).await?,
-            false => get_token(client).await?,
+            true => fetch_token(client, &self.http).await?,
+            false => get_token(client, &self.http).await?,
         };
 
         let token = match token {

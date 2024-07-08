@@ -13,8 +13,7 @@ use crate::cmd::Command;
 use clap::Parser;
 use log::LevelFilter;
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
-use std::path::PathBuf;
-use std::process::ExitCode;
+use std::{path::PathBuf, process::ExitCode};
 
 #[derive(Debug, clap::Parser)]
 #[command(about, author, version, rename_all_env = "SNAKE_CASE")]

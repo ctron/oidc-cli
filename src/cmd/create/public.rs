@@ -1,9 +1,9 @@
-use crate::utils::OrNone;
 use crate::{
     cmd::create::CreateCommon,
     config::{Client, ClientType, Config},
-    http::create_client,
+    http::{create_client, HttpOptions},
     server::Server,
+    utils::OrNone,
 };
 use anyhow::bail;
 use openid::{Discovered, Options, StandardClaims};
@@ -29,6 +29,9 @@ pub struct CreatePublic {
     /// Open the link automatically
     #[arg(short, long)]
     pub open: bool,
+
+    #[command(flatten)]
+    pub http: HttpOptions,
 }
 
 impl CreatePublic {
@@ -47,7 +50,7 @@ impl CreatePublic {
         let server = Server::new(self.port).await?;
         let redirect = format!("http://localhost:{}", server.port);
 
-        let client = create_client().await?;
+        let client = create_client(&self.http).await?;
         let client = openid::Client::<Discovered, StandardClaims>::discover_with_client(
             client,
             self.client_id.clone(),

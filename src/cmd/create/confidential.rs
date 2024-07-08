@@ -1,8 +1,8 @@
-use crate::oidc::TokenResult;
 use crate::{
     cmd::create::CreateCommon,
     config::{Client, ClientType, Config},
-    oidc::get_token,
+    http::HttpOptions,
+    oidc::{get_token, TokenResult},
     utils::OrNone,
 };
 use anyhow::{bail, Context};
@@ -24,6 +24,9 @@ pub struct CreateConfidential {
     /// The client secret
     #[arg(short = 's', long)]
     pub client_secret: String,
+
+    #[command(flatten)]
+    pub http: HttpOptions,
 }
 
 impl CreateConfidential {
@@ -49,7 +52,7 @@ impl CreateConfidential {
         };
 
         if !self.common.skip_initial {
-            let token = get_token(&client)
+            let token = get_token(&client, &self.http)
                 .await
                 .context("failed retrieving first token")?;
 

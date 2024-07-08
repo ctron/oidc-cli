@@ -1,3 +1,4 @@
+use crate::http::HttpOptions;
 use crate::{
     config::{Client, ClientState, ClientType},
     http::create_client,
@@ -13,8 +14,8 @@ pub enum TokenResult {
 }
 
 /// Fetch a new token
-pub async fn fetch_token(config: &Client) -> anyhow::Result<TokenResult> {
-    let client = create_client().await?;
+pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<TokenResult> {
+    let client = create_client(http).await?;
 
     match &config.r#type {
         ClientType::Confidential {
@@ -73,7 +74,7 @@ pub async fn fetch_token(config: &Client) -> anyhow::Result<TokenResult> {
 }
 
 /// Get the current token, or fetch a new one
-pub async fn get_token(config: &Client) -> anyhow::Result<TokenResult> {
+pub async fn get_token(config: &Client, http: &HttpOptions) -> anyhow::Result<TokenResult> {
     if let Some(state) = &config.state {
         log::debug!("Token expires: {}", OrNone(&state.expires));
         if let Some(expires) = state.expires {
@@ -83,5 +84,5 @@ pub async fn get_token(config: &Client) -> anyhow::Result<TokenResult> {
         }
     }
 
-    fetch_token(config).await
+    fetch_token(config, http).await
 }
