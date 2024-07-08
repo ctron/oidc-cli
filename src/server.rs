@@ -1,8 +1,10 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer};
-use std::net::{Ipv6Addr, SocketAddr};
-use std::sync::Arc;
-use tokio::net::TcpListener;
-use tokio::sync::{oneshot, Mutex};
+use anyhow::bail;
+use std::{net::Ipv6Addr, sync::Arc};
+use tokio::{
+    net::TcpListener,
+    sync::{oneshot, Mutex},
+};
 
 pub struct FlowResult {
     pub code: String,
@@ -47,9 +49,20 @@ impl Server {
         let (tx, rx) = oneshot::channel();
 
         let port = port.unwrap_or_default();
-        let addr = SocketAddr::new(Ipv6Addr::LOCALHOST.into(), port);
 
-        let acceptor = TcpListener::bind(addr).await?;
+        let acceptor = match TcpListener::bind((Ipv6Addr::LOCALHOST, port)).await {
+            Ok(acceptor) => acceptor,
+            Err(err) => {
+                log::info!("Failed to bind to IPv6 localhost, trying IPv4 instead: {err}");
+                match TcpListener::bind((Ipv6Addr::LOCALHOST, port)).await {
+                    Ok(acceptor) => acceptor,
+                    Err(err) => {
+                        log::error!("Failed to bind to either IPv6 or IPv4: {err}");
+                        bail!("Unable to bind to IPv4 or IPv6: {err}");
+                    }
+                }
+            }
+        };
         let acceptor = acceptor.into_std()?;
 
         let port = acceptor.local_addr()?.port();
@@ -59,7 +72,7 @@ impl Server {
         tokio::spawn(async move {
             if let Err(err) = run_http(acceptor, web::Data::new(State { tx: tx.clone() })).await {
                 if let Some(tx) = tx.lock().await.take() {
-                    // we stil have a sender, we respond with our error
+                    // we still have a sender, we respond with our error
                     let _ = tx.send(Err(err));
                 }
             }
