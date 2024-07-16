@@ -86,10 +86,13 @@ pub async fn create_client(options: &HttpOptions) -> anyhow::Result<reqwest::Cli
     client = client.tls_built_in_root_certs(!options.disable_system_certificates);
 
     for cert in &options.additional_root_certificates {
+        log::info!("Adding additional root certificate: {}", cert.display());
         let cert = std::fs::read(&cert)
             .with_context(|| format!("Reading certificate: {}", cert.display()))?;
-        let cert = reqwest::tls::Certificate::from_pem(&cert)?;
-        client = client.add_root_certificate(cert);
+        let certs = reqwest::tls::Certificate::from_pem_bundle(&cert)?;
+        for cert in certs {
+            client = client.add_root_certificate(cert);
+        }
     }
 
     // tls version
