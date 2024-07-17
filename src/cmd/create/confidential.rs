@@ -37,7 +37,7 @@ impl CreateConfidential {
 
         if !self.common.force && config.clients.contains_key(&self.common.name) {
             bail!(
-                "A client named '{}' already exists. You need to delete it first or use --ignore-existing",
+                "A client named '{}' already exists. You need to delete it first or use --force",
                 self.common.name
             );
         }
