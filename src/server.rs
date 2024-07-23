@@ -1,6 +1,9 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer};
 use anyhow::bail;
-use std::{net::Ipv6Addr, sync::Arc};
+use std::{
+    net::{Ipv4Addr, Ipv6Addr},
+    sync::Arc,
+};
 use tokio::{
     net::TcpListener,
     sync::{oneshot, Mutex},
@@ -54,7 +57,7 @@ impl Server {
             Ok(acceptor) => acceptor,
             Err(err) => {
                 log::info!("Failed to bind to IPv6 localhost, trying IPv4 instead: {err}");
-                match TcpListener::bind((Ipv6Addr::LOCALHOST, port)).await {
+                match TcpListener::bind((Ipv4Addr::LOCALHOST, port)).await {
                     Ok(acceptor) => acceptor,
                     Err(err) => {
                         log::error!("Failed to bind to either IPv6 or IPv4: {err}");
