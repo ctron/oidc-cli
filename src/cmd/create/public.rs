@@ -2,7 +2,7 @@ use crate::{
     cmd::create::CreateCommon,
     config::{Client, ClientType, Config},
     http::{create_client, HttpOptions},
-    server::Server,
+    server::{Bind, Server},
     utils::OrNone,
 };
 use anyhow::bail;
@@ -30,6 +30,18 @@ pub struct CreatePublic {
     #[arg(short, long)]
     pub open: bool,
 
+    /// Choose how to bind the local server
+    #[arg(short, long, env = "BIND_MODE", value_enum, default_value_t = Bind::Prefer6)]
+    pub bind: Bind,
+
+    /// Use IPv4 only binding (equivalent to --bind only4)
+    #[arg(short = '4', conflicts_with_all = ["bind", "only6"])]
+    pub only4: bool,
+
+    /// Use IPv6 only binding (equivalent to --bind only6)
+    #[arg(short = '6', conflicts_with = "bind")]
+    pub only6: bool,
+
     #[command(flatten)]
     pub http: HttpOptions,
 }
@@ -47,7 +59,7 @@ impl CreatePublic {
             );
         }
 
-        let server = Server::new(self.port).await?;
+        let server = Server::new(self.bind_mode(), self.port).await?;
         let redirect = format!("http://localhost:{}", server.port);
 
         let client = create_client(&self.http).await?;
@@ -104,5 +116,15 @@ Open the following URL in your browser and perform the interactive login process
         config.store(self.config.as_deref())?;
 
         Ok(())
+    }
+
+    fn bind_mode(&self) -> Bind {
+        if self.only4 {
+            Bind::Only4
+        } else if self.only6 {
+            Bind::Only6
+        } else {
+            self.bind
+        }
     }
 }

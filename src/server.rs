@@ -9,6 +9,54 @@ use tokio::{
     sync::{oneshot, Mutex},
 };
 
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
+pub enum Bind {
+    /// Try IPv6 first, then fall back to IPv4
+    #[default]
+    Prefer6,
+    /// Try IPv4 first, then fall back to IPv6
+    Prefer4,
+    /// Only try IPv6
+    Only6,
+    /// Only try IPv4
+    Only4,
+}
+
+impl Bind {
+    pub async fn into_acceptor(self, port: u16) -> anyhow::Result<TcpListener> {
+        Ok(match self {
+            Self::Prefer6 => match TcpListener::bind((Ipv6Addr::LOCALHOST, port)).await {
+                Ok(acceptor) => acceptor,
+                Err(err) => {
+                    log::info!("Failed to bind to IPv6 localhost, trying IPv4 instead: {err}");
+                    match TcpListener::bind((Ipv4Addr::LOCALHOST, port)).await {
+                        Ok(acceptor) => acceptor,
+                        Err(err) => {
+                            log::error!("Failed to bind to either IPv6 or IPv4: {err}");
+                            bail!("Unable to bind to IPv4 or IPv6: {err}");
+                        }
+                    }
+                }
+            },
+            Self::Prefer4 => match TcpListener::bind((Ipv4Addr::LOCALHOST, port)).await {
+                Ok(acceptor) => acceptor,
+                Err(err) => {
+                    log::info!("Failed to bind to IPv4 localhost, trying IPv6 instead: {err}");
+                    match TcpListener::bind((Ipv6Addr::LOCALHOST, port)).await {
+                        Ok(acceptor) => acceptor,
+                        Err(err) => {
+                            log::error!("Failed to bind to either IPv6 or IPv4: {err}");
+                            bail!("Unable to bind to IPv4 or IPv6: {err}");
+                        }
+                    }
+                }
+            },
+            Self::Only6 => TcpListener::bind((Ipv6Addr::LOCALHOST, port)).await?,
+            Self::Only4 => TcpListener::bind((Ipv4Addr::LOCALHOST, port)).await?,
+        })
+    }
+}
+
 pub struct FlowResult {
     pub code: String,
 }
@@ -48,24 +96,12 @@ async fn receive(
 }
 
 impl Server {
-    pub async fn new(port: Option<u16>) -> anyhow::Result<Self> {
+    pub async fn new(bind: Bind, port: Option<u16>) -> anyhow::Result<Self> {
         let (tx, rx) = oneshot::channel();
 
         let port = port.unwrap_or_default();
 
-        let acceptor = match TcpListener::bind((Ipv6Addr::LOCALHOST, port)).await {
-            Ok(acceptor) => acceptor,
-            Err(err) => {
-                log::info!("Failed to bind to IPv6 localhost, trying IPv4 instead: {err}");
-                match TcpListener::bind((Ipv4Addr::LOCALHOST, port)).await {
-                    Ok(acceptor) => acceptor,
-                    Err(err) => {
-                        log::error!("Failed to bind to either IPv6 or IPv4: {err}");
-                        bail!("Unable to bind to IPv4 or IPv6: {err}");
-                    }
-                }
-            }
-        };
+        let acceptor = bind.into_acceptor(port).await?;
         let acceptor = acceptor.into_std()?;
 
         let port = acceptor.local_addr()?.port();
