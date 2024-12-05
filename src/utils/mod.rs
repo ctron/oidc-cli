@@ -7,7 +7,7 @@ pub struct OrNone<'a, T>(pub &'a Option<T>)
 where
     T: Display;
 
-impl<'a, T> Display for OrNone<'a, T>
+impl<T> Display for OrNone<'_, T>
 where
     T: Display,
 {

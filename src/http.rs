@@ -87,7 +87,7 @@ pub async fn create_client(options: &HttpOptions) -> anyhow::Result<reqwest::Cli
 
     for cert in &options.additional_root_certificates {
         log::info!("Adding additional root certificate: {}", cert.display());
-        let cert = std::fs::read(&cert)
+        let cert = std::fs::read(cert)
             .with_context(|| format!("Reading certificate: {}", cert.display()))?;
         let certs = reqwest::tls::Certificate::from_pem_bundle(&cert)?;
         for cert in certs {
