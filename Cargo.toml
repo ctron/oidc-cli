@@ -25,8 +25,8 @@ pkg-fmt = "bin"
 actix-web = { version = "4", features = ["openssl"] }
 anyhow = "1"
 biscuit = "0.7"
-chrono = "0.4"
 clap = { version = "4", features = ["derive", "env"] }
+clap_complete = "4"
 colored_json = "5"
 comfy-table = "7"
 directories = "5"
