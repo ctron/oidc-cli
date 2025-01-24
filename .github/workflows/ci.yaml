@@ -82,6 +82,7 @@ jobs:
         run: |
           rustup install ${{ matrix.rust }}
           rustup default ${{ matrix.rust }}
+          rustup component add clippy ${{ matrix.rust }}
 
       - name: Install dependencies
         run: ${{ matrix.install }}
