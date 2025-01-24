@@ -89,5 +89,8 @@ jobs:
       - name: Check
         run: cargo check --workspace ${{ matrix.args }}
 
+      - name: Clippy
+        run: cargo clippy --all-targets --tests --bins --all -- -D warnings
+
       - name: Test
         run: cargo test --workspace ${{ matrix.args }} -- --nocapture
