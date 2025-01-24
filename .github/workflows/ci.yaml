@@ -81,17 +81,15 @@ jobs:
       - name: Install Rust ${{ matrix.rust }}
         run: |
           rustup install ${{ matrix.rust }}
-          rustup default ${{ matrix.rust }}
-          rustup component add clippy ${{ matrix.rust }}
 
       - name: Install dependencies
         run: ${{ matrix.install }}
 
       - name: Check
-        run: cargo check --workspace ${{ matrix.args }}
+        run: cargo +${{ matrix.rust }} check --workspace ${{ matrix.args }}
 
       - name: Clippy
-        run: cargo clippy --all-targets --tests --bins --all -- -D warnings
+        run: cargo +${{ matrix.rust }} clippy --all-targets --tests --bins --all -- -D warnings
 
       - name: Test
-        run: cargo test --workspace ${{ matrix.args }} -- --nocapture
+        run: cargo +${{ matrix.rust }} test --workspace ${{ matrix.args }} -- --nocapture
