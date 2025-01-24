@@ -80,7 +80,7 @@ jobs:
 
       - name: Install Rust ${{ matrix.rust }}
         run: |
-          rustup install ${{ matrix.rust }}
+          rustup install ${{ matrix.rust }} --component clippy
 
       - name: Install dependencies
         run: ${{ matrix.install }}
