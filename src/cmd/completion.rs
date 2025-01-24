@@ -1,21 +1,48 @@
 use crate::Cli;
 use clap::CommandFactory;
 use clap_complete::generate;
-use clap_complete::Shell::{Bash, Fish, Zsh};
-use std::path::Path;
-use std::{env, io};
+use std::{env, io, path::Path};
 
 /// Generate shell completion
 #[derive(Debug, clap::Parser)]
 #[command(rename_all_env = "SNAKE_CASE")]
 pub struct GetCompletion {
-    /// The shell to generate completions for. Supported values are bash, zsh or fish
-    pub shell: String,
+    /// The shell to generate completions for
+    #[arg(value_enum)]
+    shell: Shell,
+}
+
+#[derive(Clone, Copy, Debug, clap::ValueEnum)]
+#[value(rename_all = "lowercase")]
+enum Shell {
+    /// Bourne Again `SHell` (bash)
+    Bash,
+    /// Elvish shell
+    Elvish,
+    /// Friendly Interactive `SHell` (fish)
+    Fish,
+    /// `PowerShell`
+    #[value(alias = "ps")]
+    #[allow(clippy::enum_variant_names)]
+    PowerShell,
+    /// Z `SHell` (zsh)
+    Zsh,
+}
+
+impl From<Shell> for clap_complete::Shell {
+    fn from(value: Shell) -> Self {
+        match value {
+            Shell::Bash => Self::Bash,
+            Shell::Elvish => Self::Elvish,
+            Shell::Fish => Self::Fish,
+            Shell::PowerShell => Self::PowerShell,
+            Shell::Zsh => Self::Zsh,
+        }
+    }
 }
 
 impl GetCompletion {
     pub async fn run(self) -> anyhow::Result<()> {
-        let shell = self.shell;
         let mut cmd = Cli::command();
         let bin_name = env::args()
             .next()
@@ -24,14 +51,15 @@ impl GetCompletion {
                     .file_stem()
                     .map(|name| name.to_string_lossy().into_owned())
             })
-            .unwrap();
+            .unwrap_or_else(|| env!("CARGO_BIN_NAME").to_string());
 
-        match shell.as_str() {
-            "bash" => generate(Bash, &mut cmd, &bin_name, &mut io::stdout()),
-            "zsh" => generate(Zsh, &mut cmd, &bin_name, &mut io::stdout()),
-            "fish" => generate(Fish, &mut cmd, &bin_name, &mut io::stdout()),
-            _ => eprintln!("Unsupported shell: {}", shell),
-        }
+        generate(
+            clap_complete::Shell::from(self.shell),
+            &mut cmd,
+            &bin_name,
+            &mut io::stdout(),
+        );
+
         Ok(())
     }
 }
