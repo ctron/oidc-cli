@@ -9,7 +9,7 @@ use anyhow::bail;
 use openid::{Discovered, Options, StandardClaims};
 use std::path::PathBuf;
 
-/// Create a new confidential client
+/// Create a new public client
 #[derive(Debug, clap::Parser)]
 pub struct CreatePublic {
     #[command(flatten)]
