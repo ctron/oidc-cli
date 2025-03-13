@@ -1,7 +1,7 @@
 [package]
 name = "oidc-cli"
 version = "0.4.1"
-edition = "2021"
+edition = "2024"
 description = "A command line tool to work with OIDC tokens"
 
 authors = ["Jens Reimann <ctron@dentrassi.de>"]
@@ -10,8 +10,8 @@ repository = "https://github.com/ctron/oidc-cli"
 categories = ["command-line-utilities", "authentication"]
 keywords = ["oidc", "cli"]
 readme = "README.md"
-# based on clap
-rust-version = "1.74"
+# based on edition 2024
+rust-version = "1.85"
 
 [[bin]]
 name = "oidc"
@@ -29,12 +29,12 @@ clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 colored_json = "5"
 comfy-table = "7"
-directories = "5"
+directories = "6"
 humantime = "2"
 log = "0.4"
 num-traits = "0.2"
 open = "5"
-openid = "0.15"
+openid = "0.16.1"
 pretty-hex = "0.4.1"
 reqwest = "0.12"
 serde = { version = "1", features = ["derive"] }

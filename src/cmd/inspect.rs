@@ -1,5 +1,5 @@
 use crate::utils::inspect::inspect;
-use tokio::io::{stdin, AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, BufReader, stdin};
 
 /// Inspect tokens
 #[derive(Debug, clap::Parser)]

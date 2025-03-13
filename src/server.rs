@@ -1,4 +1,4 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer};
+use actix_web::{App, HttpResponse, HttpServer, get, web};
 use anyhow::bail;
 use std::{
     net::{Ipv4Addr, Ipv6Addr},
@@ -6,7 +6,7 @@ use std::{
 };
 use tokio::{
     net::TcpListener,
-    sync::{oneshot, Mutex},
+    sync::{Mutex, oneshot},
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]

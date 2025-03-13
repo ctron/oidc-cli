@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     http::HttpOptions,
-    oidc::{fetch_token, get_token, TokenResult},
+    oidc::{TokenResult, fetch_token, get_token},
     utils::inspect::inspect,
 };
 use anyhow::anyhow;

@@ -2,10 +2,10 @@ use crate::{
     cmd::create::CreateCommon,
     config::{Client, ClientType, Config},
     http::HttpOptions,
-    oidc::{get_token, TokenResult},
+    oidc::{TokenResult, get_token},
     utils::OrNone,
 };
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use std::path::PathBuf;
 
 /// Create a new confidential client

@@ -2,10 +2,10 @@ use crate::{
     claims::{AccessTokenClaims, RefreshTokenClaims},
     config::{ClientType, Config},
 };
-use comfy_table::{presets, Cell, CellAlignment, Color, ContentArrangement, Row, Table};
-use openid::{biscuit::jws::Compact, CompactJson, Empty};
+use comfy_table::{Cell, CellAlignment, Color, ContentArrangement, Row, Table, presets};
+use openid::{CompactJson, Empty, biscuit::jws::Compact};
 use std::path::PathBuf;
-use time::{macros::format_description, OffsetDateTime};
+use time::{OffsetDateTime, macros::format_description};
 
 /// List configured clients
 #[derive(Debug, clap::Parser)]

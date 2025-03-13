@@ -2,7 +2,7 @@ use biscuit::{Base64Url, CompactPart};
 use colored_json::to_colored_json_auto;
 use pretty_hex::pretty_hex;
 use serde_json::Value;
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 
 pub fn inspect(token: String) -> anyhow::Result<()> {
     let token = biscuit::Compact::decode(&token);

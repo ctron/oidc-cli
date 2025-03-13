@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use num_traits::ToPrimitive;
 use openid::Bearer;
 use std::{
