@@ -36,7 +36,7 @@ pub struct CreateCommon {
     pub issuer: Url,
 
     /// Additional scope
-    #[arg(short, long)]
+    #[arg(short = 'S', long)]
     pub scope: Option<String>,
 }
 
