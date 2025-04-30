@@ -85,6 +85,8 @@ impl Config {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Client {
     pub issuer_url: Url,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope: Option<String>,
     pub r#type: ClientType,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub state: Option<ClientState>,

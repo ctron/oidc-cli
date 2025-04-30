@@ -44,6 +44,7 @@ impl CreateConfidential {
 
         let mut client = Client {
             issuer_url: self.common.issuer,
+            scope: self.common.scope,
             r#type: ClientType::Confidential {
                 client_id: self.client_id,
                 client_secret: self.client_secret,

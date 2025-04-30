@@ -103,6 +103,7 @@ Open the following URL in your browser and perform the interactive login process
 
         let client = Client {
             issuer_url: self.common.issuer,
+            scope: self.common.scope,
             r#type: ClientType::Public {
                 client_id: self.client_id,
             },

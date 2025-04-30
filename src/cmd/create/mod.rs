@@ -34,6 +34,10 @@ pub struct CreateCommon {
     /// URL of the issuer
     #[arg(long)]
     pub issuer: Url,
+
+    /// Additional scope
+    #[arg(short, long)]
+    pub scope: Option<String>,
 }
 
 #[derive(Debug, clap::Subcommand)]

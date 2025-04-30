@@ -1,7 +1,6 @@
-use crate::http::HttpOptions;
 use crate::{
     config::{Client, ClientState, ClientType},
-    http::create_client,
+    http::{HttpOptions, create_client},
     utils::OrNone,
 };
 use anyhow::{anyhow, bail};
@@ -33,7 +32,7 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
 
             Ok(TokenResult::Refreshed(
                 client
-                    .request_token_using_client_credentials(None)
+                    .request_token_using_client_credentials(config.scope.as_deref())
                     .await?
                     .try_into()?,
             ))
@@ -58,7 +57,7 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
             let token = Box::new(Bearer {
                 access_token: state.access_token.clone(),
                 token_type: "".to_string(),
-                scope: None,
+                scope: config.scope.clone(),
                 state: None,
                 refresh_token: Some(state.refresh_token.clone().ok_or_else(||anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?),
                 expires_in: None,
@@ -66,7 +65,7 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
                 extra: None,
             });
 
-            let token = client.refresh_token(token, None).await?;
+            let token = client.refresh_token(token, config.scope.as_deref()).await?;
 
             Ok(TokenResult::Refreshed(token.try_into()?))
         }
