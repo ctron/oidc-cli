@@ -33,6 +33,10 @@ pub struct GetToken {
     #[arg(short, long)]
     pub bearer: bool,
 
+    /// Suitable for using directly with HTTPie as header
+    #[arg(short = 'H', long, conflicts_with = "bearer")]
+    pub header: bool,
+
     /// Inspect the token
     #[arg(short = 'I', long, conflicts_with = "bearer")]
     pub inspect: bool,
@@ -84,12 +88,19 @@ impl GetToken {
             token.access_token
         };
 
-        if self.bearer {
-            println!("Bearer {token}");
-        } else if self.inspect {
-            inspect(token)?;
-        } else {
-            println!("{token}");
+        match (self.bearer, self.header, self.inspect) {
+            (true, _, _) => {
+                println!("Bearer {token}");
+            }
+            (_, true, _) => {
+                println!("Authorization:Bearer {token}");
+            }
+            (_, _, true) => {
+                inspect(token)?;
+            }
+            _ => {
+                println!("{token}");
+            }
         }
 
         Ok(())
