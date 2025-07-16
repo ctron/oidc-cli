@@ -251,3 +251,8 @@ jobs:
 
           gh release create ${OPTS} --title "${{ needs.init.outputs.version }}" -F /tmp/changelog.md ${TAG} \
             $(find staging -type f)
+
+      - name: Create attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: staging/oidc-*
