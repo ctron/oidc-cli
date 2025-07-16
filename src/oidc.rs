@@ -4,7 +4,11 @@ use crate::{
     utils::OrNone,
 };
 use anyhow::{anyhow, bail};
-use openid::{Bearer, Discovered, StandardClaims};
+use oauth2::RefreshToken;
+use openidconnect::{
+    ClientId, ClientSecret, IssuerUrl, Scope,
+    core::{CoreClient, CoreProviderMetadata},
+};
 use time::OffsetDateTime;
 
 pub enum TokenResult {
@@ -14,60 +18,61 @@ pub enum TokenResult {
 
 /// Fetch a new token
 pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<TokenResult> {
-    let client = create_client(http).await?;
+    let http = create_client(http).await?;
 
     match &config.r#type {
         ClientType::Confidential {
             client_id,
             client_secret,
         } => {
-            let client = openid::Client::<Discovered, StandardClaims>::discover_with_client(
-                client,
-                client_id.clone(),
-                Some(client_secret.clone()),
-                None,
-                config.issuer_url.clone(),
+            let provider_metadata = CoreProviderMetadata::discover_async(
+                IssuerUrl::from_url(config.issuer_url.clone()),
+                &http,
             )
             .await?;
 
-            Ok(TokenResult::Refreshed(
-                client
-                    .request_token_using_client_credentials(config.scope.as_deref())
-                    .await?
-                    .try_into()?,
-            ))
+            let client = CoreClient::from_provider_metadata(
+                provider_metadata,
+                ClientId::new(client_id.clone()),
+                Some(ClientSecret::new(client_secret.clone())),
+            );
+
+            let token = client
+                .exchange_client_credentials()?
+                .add_scopes(extra_scopes(config.scope.as_deref()))
+                .request_async(&http)
+                .await?;
+
+            Ok(TokenResult::Refreshed(token.into()))
         }
         ClientType::Public { client_id } => {
-            let client = openid::Client::<Discovered, StandardClaims>::discover_with_client(
-                client,
-                client_id.clone(),
-                None,
-                None,
-                config.issuer_url.clone(),
-            )
-            .await?;
-
             let Some(state) = &config.state else {
                 bail!(
                     "Expired token of a public client, without a state. You will need to re-login."
                 );
             };
 
-            // we only need the `refresh_token`
-            let token = Box::new(Bearer {
-                access_token: state.access_token.clone(),
-                token_type: "".to_string(),
-                scope: config.scope.clone(),
-                state: None,
-                refresh_token: Some(state.refresh_token.clone().ok_or_else(||anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?),
-                expires_in: None,
-                id_token: None,
-                extra: None,
-            });
+            let provider_metadata = CoreProviderMetadata::discover_async(
+                IssuerUrl::from_url(config.issuer_url.clone()),
+                &http,
+            )
+            .await?;
 
-            let token = client.refresh_token(token, config.scope.as_deref()).await?;
+            let client = CoreClient::from_provider_metadata(
+                provider_metadata,
+                ClientId::new(client_id.clone()),
+                None,
+            );
 
-            Ok(TokenResult::Refreshed(token.try_into()?))
+            let refresh_token= state.refresh_token.clone().ok_or_else(|| anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?;
+
+            let token = client
+                .exchange_refresh_token(&RefreshToken::new(refresh_token))?
+                .add_scopes(extra_scopes(config.scope.as_deref()))
+                .request_async(&http)
+                .await?;
+
+            Ok(TokenResult::Refreshed(token.into()))
         }
     }
 }
@@ -84,4 +89,11 @@ pub async fn get_token(config: &Client, http: &HttpOptions) -> anyhow::Result<To
     }
 
     fetch_token(config, http).await
+}
+
+pub fn extra_scopes(scope: Option<&str>) -> impl Iterator<Item = Scope> {
+    scope
+        .into_iter()
+        .flat_map(|s| s.split(' '))
+        .map(|s| Scope::new(s.into()))
 }

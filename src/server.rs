@@ -59,6 +59,7 @@ impl Bind {
 
 pub struct FlowResult {
     pub code: String,
+    pub state: Option<String>,
 }
 
 pub struct Server {
@@ -69,6 +70,7 @@ pub struct Server {
 #[derive(Clone, Debug, serde::Deserialize)]
 struct ResponseQuery {
     code: String,
+    state: Option<String>,
 }
 
 #[derive(Clone)]
@@ -85,7 +87,10 @@ async fn receive(
         return HttpResponse::Gone().finish();
     };
 
-    let result = FlowResult { code: query.code };
+    let result = FlowResult {
+        code: query.code,
+        state: query.state,
+    };
 
     if tx.send(Ok(result)).is_err() {
         log::info!("failed to report token, receiver is already closed");

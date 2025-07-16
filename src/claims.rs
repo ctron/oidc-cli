@@ -1,4 +1,4 @@
-use openid::{CompactJson, SingleOrMultiple};
+use biscuit::{CompactJson, SingleOrMultiple};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use url::Url;
