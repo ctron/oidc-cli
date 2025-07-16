@@ -1,13 +1,12 @@
 use anyhow::{Context, anyhow};
-use num_traits::ToPrimitive;
-use openid::Bearer;
+use oauth2::TokenResponse;
+use openidconnect::core::CoreTokenResponse;
 use std::{
     collections::BTreeMap,
     fs::OpenOptions,
     io::{BufReader, BufWriter, ErrorKind},
     path::{Path, PathBuf},
 };
-use time::Duration;
 use url::Url;
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
@@ -114,18 +113,25 @@ pub struct ClientState {
     pub expires: Option<time::OffsetDateTime>,
 }
 
-impl TryFrom<Bearer> for ClientState {
-    type Error = anyhow::Error;
+impl From<CoreTokenResponse> for ClientState {
+    fn from(token: CoreTokenResponse) -> Self {
+        let access_token = token.access_token().clone().into_secret();
+        let refresh_token = token.refresh_token().cloned().map(|t| t.into_secret());
+        let expires = token
+            .expires_in()
+            .map(|exp| time::OffsetDateTime::now_utc() + exp);
 
-    fn try_from(token: Bearer) -> Result<Self, Self::Error> {
-        let expires = token.expires_in.map(|exp| {
-            time::OffsetDateTime::now_utc() + Duration::seconds(exp.to_i64().unwrap_or(i64::MAX))
-        });
-        Ok(ClientState {
-            access_token: token.access_token,
-            id_token: token.id_token,
-            refresh_token: token.refresh_token,
+        let id_token = token
+            .extra_fields()
+            .id_token()
+            .cloned()
+            .map(|t| t.to_string());
+
+        Self {
+            access_token,
+            id_token,
+            refresh_token,
             expires,
-        })
+        }
     }
 }

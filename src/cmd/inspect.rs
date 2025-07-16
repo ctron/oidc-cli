@@ -4,7 +4,7 @@ use tokio::io::{AsyncBufReadExt, BufReader, stdin};
 /// Inspect tokens
 #[derive(Debug, clap::Parser)]
 pub struct Inspect {
-    /// The tokens to inspect, if one is present it will read from stdin.
+    /// The tokens to inspect, if none is present it will read from stdin.
     pub token: Vec<String>,
 }
 

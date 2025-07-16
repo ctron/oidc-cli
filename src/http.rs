@@ -65,7 +65,10 @@ pub async fn create_client(options: &HttpOptions) -> anyhow::Result<reqwest::Cli
     let mut headers = header::HeaderMap::new();
     headers.insert("User-Agent", header::HeaderValue::from_static(USER_AGENT));
 
-    let mut client = reqwest::ClientBuilder::new().default_headers(headers);
+    let mut client = reqwest::ClientBuilder::new()
+        .default_headers(headers)
+        // Don't allow redirects to prevent SSRF
+        .redirect(reqwest::redirect::Policy::none());
 
     // tls validation
 

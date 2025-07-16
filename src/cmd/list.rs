@@ -2,8 +2,8 @@ use crate::{
     claims::{AccessTokenClaims, RefreshTokenClaims},
     config::{ClientType, Config},
 };
+use biscuit::{CompactJson, Empty, jws::Compact};
 use comfy_table::{Cell, CellAlignment, Color, ContentArrangement, Row, Table, presets};
-use openid::{CompactJson, Empty, biscuit::jws::Compact};
 use std::path::PathBuf;
 use time::{OffsetDateTime, macros::format_description};
 

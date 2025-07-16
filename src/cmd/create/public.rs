@@ -2,11 +2,18 @@ use crate::{
     cmd::create::CreateCommon,
     config::{Client, ClientType, Config},
     http::{HttpOptions, create_client},
+    oidc::extra_scopes,
     server::{Bind, Server},
     utils::OrNone,
 };
-use anyhow::bail;
-use openid::{Discovered, Options, StandardClaims};
+use anyhow::{Context, bail};
+use oauth2::{
+    AuthorizationCode, ClientId, CsrfToken, PkceCodeChallenge, RedirectUrl, TokenResponse,
+};
+use openidconnect::{
+    AuthenticationFlow, IssuerUrl, Nonce,
+    core::{CoreClient, CoreProviderMetadata, CoreResponseType},
+};
 use std::path::PathBuf;
 
 /// Create a new public client
@@ -62,20 +69,32 @@ impl CreatePublic {
         let server = Server::new(self.bind_mode(), self.port).await?;
         let redirect = format!("http://localhost:{}", server.port);
 
-        let client = create_client(&self.http).await?;
-        let client = openid::Client::<Discovered, StandardClaims>::discover_with_client(
-            client,
-            self.client_id.clone(),
-            None,
-            Some(redirect),
-            self.common.issuer.clone(),
+        let http = create_client(&self.http).await?;
+
+        let provider_metadata = CoreProviderMetadata::discover_async(
+            IssuerUrl::from_url(self.common.issuer.clone()),
+            &http,
         )
         .await?;
 
-        let options = Options {
-            ..Default::default()
-        };
-        let open = client.auth_url(&options);
+        let client = CoreClient::from_provider_metadata(
+            provider_metadata,
+            ClientId::new(self.client_id.clone()),
+            None,
+        )
+        .set_redirect_uri(RedirectUrl::new(redirect)?);
+
+        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+
+        let req = client
+            .authorize_url(
+                AuthenticationFlow::<CoreResponseType>::AuthorizationCode,
+                CsrfToken::new_random,
+                Nonce::new_random,
+            )
+            .add_scopes(extra_scopes(self.common.scope.as_deref()));
+
+        let (open, csrf_token, nonce) = req.set_pkce_challenge(pkce_challenge).url();
 
         println!(
             r#"
@@ -93,13 +112,59 @@ Open the following URL in your browser and perform the interactive login process
             );
         }
 
+        // receive the result from the local server
+
         let result = server.receive_token().await?;
-        let token = client.request_token(&result.code).await?;
+
+        // validate CSRF token
+
+        match result.state {
+            None => {
+                bail!("missing 'state' parameter from server");
+            }
+            Some(state) if &state != csrf_token.secret() => {
+                bail!("state mismatch");
+            }
+            Some(_) => {}
+        }
+
+        // fetch token
+
+        let token = client
+            .exchange_code(AuthorizationCode::new(result.code))?
+            .set_pkce_verifier(pkce_verifier)
+            .request_async(&http)
+            .await?;
+
+        // check ID token
+
+        if let Some(id_token) = token.extra_fields().id_token() {
+            id_token
+                .clone()
+                .into_claims(&client.id_token_verifier(), &nonce)
+                .context("failed to verify ID token")?;
+        }
+
+        // log info
 
         log::info!("First token:");
-        log::info!("       ID: {}", OrNone(&token.id_token));
-        log::info!("   Access: {}", token.access_token);
-        log::info!("  Refresh: {}", OrNone(&token.refresh_token));
+        log::info!(
+            "       ID: {}",
+            OrNone(
+                &token
+                    .extra_fields()
+                    .id_token()
+                    .cloned()
+                    .map(|t| t.to_string())
+            )
+        );
+        log::info!("   Access: {}", token.access_token().clone().into_secret());
+        log::info!(
+            "  Refresh: {}",
+            OrNone(&token.refresh_token().cloned().map(|t| t.into_secret()))
+        );
+
+        // create client
 
         let client = Client {
             issuer_url: self.common.issuer,
@@ -107,7 +172,7 @@ Open the following URL in your browser and perform the interactive login process
             r#type: ClientType::Public {
                 client_id: self.client_id,
             },
-            state: Some(token.try_into()?),
+            state: Some(token.into()),
         };
 
         config
