@@ -12,9 +12,11 @@ impl Inspect {
     pub async fn run(self) -> anyhow::Result<()> {
         let mut tokens = self.token;
 
-        let mut lines = BufReader::new(stdin()).lines();
-        while let Some(line) = lines.next_line().await? {
-            tokens.push(line);
+        if tokens.is_empty() {
+            let mut lines = BufReader::new(stdin()).lines();
+            while let Some(line) = lines.next_line().await? {
+                tokens.push(line);
+            }
         }
 
         for (n, token) in tokens.into_iter().enumerate() {
