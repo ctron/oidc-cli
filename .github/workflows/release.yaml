@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: write # for creating a release
+  id-token: write # for attestations
+  attestations: write # for attestations
 
 jobs:
 
