@@ -100,6 +100,9 @@ jobs:
             os: windows-11-arm
             exe: ".exe"
             install: |
+              iex "& { $(irm https://sh.rustup.rs) -y }"
+              echo "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
               echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
               vcpkg install openssl:arm64-windows-static-md
 
@@ -132,16 +135,16 @@ jobs:
             target/
           key: ${{ matrix.target }}-cargo-release-${{ hashFiles('**/Cargo.toml') }}
 
+      - name: Install dependencies
+        if: matrix.install != ''
+        run: ${{ matrix.install }}
+
       - name: Disable rustup auto update
         run: |
           rustup set auto-self-update disable
 
       - run: rustup target add ${{ matrix.target }}
         if: matrix.target != ''
-
-      - name: Install dependencies
-        if: matrix.install != ''
-        run: ${{ matrix.install }}
 
       - name: Prepare cross
         if: matrix.cross == 'true'
