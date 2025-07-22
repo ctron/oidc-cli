@@ -45,7 +45,10 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
 
             Ok(TokenResult::Refreshed(token.into()))
         }
-        ClientType::Public { client_id } => {
+        ClientType::Public {
+            client_id,
+            client_secret,
+        } => {
             let Some(state) = &config.state else {
                 bail!(
                     "Expired token of a public client, without a state. You will need to re-login."
@@ -61,7 +64,7 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
             let client = CoreClient::from_provider_metadata(
                 provider_metadata,
                 ClientId::new(client_id.clone()),
-                None,
+                client_secret.clone().map(ClientSecret::new),
             );
 
             let refresh_token= state.refresh_token.clone().ok_or_else(|| anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?;

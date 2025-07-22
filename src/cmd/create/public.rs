@@ -8,7 +8,8 @@ use crate::{
 };
 use anyhow::{Context, bail};
 use oauth2::{
-    AuthorizationCode, ClientId, CsrfToken, PkceCodeChallenge, RedirectUrl, TokenResponse,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl,
+    TokenResponse,
 };
 use openidconnect::{
     AuthenticationFlow, IssuerUrl, Nonce,
@@ -28,6 +29,10 @@ pub struct CreatePublic {
     /// The client ID
     #[arg(short = 'i', long)]
     pub client_id: String,
+
+    /// The client secret
+    #[arg(short = 's', long)]
+    pub client_secret: Option<String>,
 
     /// Force using a specific port for the local server
     #[arg(short, long)]
@@ -80,7 +85,7 @@ impl CreatePublic {
         let client = CoreClient::from_provider_metadata(
             provider_metadata,
             ClientId::new(self.client_id.clone()),
-            None,
+            self.client_secret.clone().map(ClientSecret::new),
         )
         .set_redirect_uri(RedirectUrl::new(redirect)?);
 
@@ -171,6 +176,7 @@ Open the following URL in your browser and perform the interactive login process
             scope: self.common.scope,
             r#type: ClientType::Public {
                 client_id: self.client_id,
+                client_secret: self.client_secret,
             },
             state: Some(token.into()),
         };

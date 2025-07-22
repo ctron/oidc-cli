@@ -99,6 +99,8 @@ pub enum ClientType {
     },
     Public {
         client_id: String,
+        #[serde(default)]
+        client_secret: Option<String>,
     },
 }
 

@@ -42,7 +42,7 @@ impl List {
             row.add_cell(client.issuer_url.to_string().into());
 
             match &client.r#type {
-                ClientType::Public { client_id } => {
+                ClientType::Public { client_id, .. } => {
                     row.add_cell(client_id.into());
                     row.add_cell(Cell::from("X").set_alignment(CellAlignment::Center));
                 }
