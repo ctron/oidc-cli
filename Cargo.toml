@@ -1,6 +1,6 @@
 [package]
 name = "oidc-cli"
-version = "0.6.0-rc.3"
+version = "0.6.0"
 edition = "2024"
 description = "A command line tool to work with OIDC tokens"
 
