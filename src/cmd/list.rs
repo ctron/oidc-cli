@@ -53,7 +53,7 @@ impl List {
             }
 
             if let Some(state) = &client.state {
-                let access = self.token::<_, AccessTokenClaims>(&state.access_token, |token| {
+                let access = Self::token::<_, AccessTokenClaims>(&state.access_token, |token| {
                     self.expiration(
                         token
                             .exp
@@ -67,7 +67,7 @@ impl List {
                     .refresh_token
                     .as_ref()
                     .map(|refresh| {
-                        self.token::<_, RefreshTokenClaims>(refresh, |token| {
+                        Self::token::<_, RefreshTokenClaims>(refresh, |token| {
                             self.expiration(
                                 token
                                     .exp
@@ -91,7 +91,7 @@ impl List {
     /// Decode a token and call the function to extract cell information
     ///
     /// NOTE: The token is not being verified.
-    fn token<F, T>(&self, token: &str, f: F) -> Cell
+    fn token<F, T>(token: &str, f: F) -> Cell
     where
         F: FnOnce(T) -> Cell,
         T: CompactJson,

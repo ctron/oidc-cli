@@ -1,9 +1,11 @@
 use crate::{
+    claims::RefreshTokenClaims,
     config::{Client, ClientState, ClientType},
     http::{HttpOptions, create_client},
     utils::OrNone,
 };
 use anyhow::{anyhow, bail};
+use biscuit::{Empty, jws::Compact};
 use oauth2::RefreshToken;
 use openidconnect::{
     ClientId, ClientSecret, IssuerUrl, Scope,
@@ -18,6 +20,8 @@ pub enum TokenResult {
 
 /// Fetch a new token
 pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<TokenResult> {
+    log::debug!("Fetching new token");
+
     let http = create_client(http).await?;
 
     match &config.r#type {
@@ -61,13 +65,28 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
             )
             .await?;
 
+            let refresh_token = state.refresh_token.clone().ok_or_else(|| anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?;
+
+            if let Ok(token) = Compact::<RefreshTokenClaims, Empty>::new_encoded(&refresh_token)
+                .unverified_payload()
+            {
+                log::debug!("refresh token expiration: {:?}", token.exp);
+
+                if let Some(exp) = token
+                    .exp
+                    .and_then(|exp| OffsetDateTime::from_unix_timestamp(exp).ok())
+                {
+                    if exp < OffsetDateTime::now_utc() {
+                        bail!("Refresh token expired. You need to re-login.");
+                    }
+                }
+            }
+
             let client = CoreClient::from_provider_metadata(
                 provider_metadata,
                 ClientId::new(client_id.clone()),
                 client_secret.clone().map(ClientSecret::new),
             );
-
-            let refresh_token= state.refresh_token.clone().ok_or_else(|| anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?;
 
             let token = client
                 .exchange_refresh_token(&RefreshToken::new(refresh_token))?
