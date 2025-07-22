@@ -22,7 +22,7 @@ cargo binstall oidc-cli
 
 Download a released binary: https://github.com/ctron/oidc-cli/releases
 
-On windows, you can use `winget`:
+On Windows, you can use `winget`:
 
 ```bash
 winget install ctron.oidc
