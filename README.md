@@ -53,3 +53,9 @@ Or combine it with e.g., HTTPie:
 ```bash
 http example.com/api "Authorization:$(oidc token my-client --bearer)"
 ```
+
+Or even shorter:
+
+```bash
+http example.com/api $(oidc token -H my-client)
+```
