@@ -28,6 +28,13 @@ On Windows, you can use `winget`:
 winget install ctron.oidc
 ```
 
+With `brew` to you can:
+
+```bash
+brew tap ctron/tap
+brew install ctron/tap/oidc
+```
+
 ## Example
 
 Creating a new (confidential) client:
