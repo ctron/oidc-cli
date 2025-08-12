@@ -6,10 +6,10 @@ use crate::{
 };
 use anyhow::{anyhow, bail};
 use biscuit::{Empty, jws::Compact};
-use oauth2::RefreshToken;
+use oauth2::{EndpointMaybeSet, EndpointNotSet, EndpointSet, RefreshToken};
 use openidconnect::{
     ClientId, ClientSecret, IssuerUrl, Scope,
-    core::{CoreClient, CoreProviderMetadata},
+    core::{CoreClient, CoreProviderMetadata, CoreTokenResponse},
 };
 use time::OffsetDateTime;
 
@@ -67,32 +67,15 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
 
             let refresh_token = state.refresh_token.clone().ok_or_else(|| anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?;
 
-            if let Ok(token) = Compact::<RefreshTokenClaims, Empty>::new_encoded(&refresh_token)
-                .unverified_payload()
-            {
-                log::debug!("refresh token expiration: {:?}", token.exp);
-
-                if let Some(exp) = token
-                    .exp
-                    .and_then(|exp| OffsetDateTime::from_unix_timestamp(exp).ok())
-                {
-                    if exp < OffsetDateTime::now_utc() {
-                        bail!("Refresh token expired. You need to re-login.");
-                    }
-                }
-            }
-
             let client = CoreClient::from_provider_metadata(
                 provider_metadata,
                 ClientId::new(client_id.clone()),
                 client_secret.clone().map(ClientSecret::new),
             );
 
-            let token = client
-                .exchange_refresh_token(&RefreshToken::new(refresh_token))?
-                .add_scopes(extra_scopes(config.scope.as_deref()))
-                .request_async(&http)
-                .await?;
+            let token =
+                refresh_token_request(&http, &client, config.scope.as_deref(), refresh_token)
+                    .await?;
 
             Ok(TokenResult::Refreshed(token.into()))
         }
@@ -118,4 +101,45 @@ pub fn extra_scopes(scope: Option<&str>) -> impl Iterator<Item = Scope> {
         .into_iter()
         .flat_map(|s| s.split(' '))
         .map(|s| Scope::new(s.into()))
+}
+
+pub fn check_refresh_token_expiration(refresh_token: &str) -> anyhow::Result<()> {
+    if let Ok(token) =
+        Compact::<RefreshTokenClaims, Empty>::new_encoded(refresh_token).unverified_payload()
+    {
+        log::debug!("refresh token expiration: {:?}", token.exp);
+
+        if let Some(exp) = token
+            .exp
+            .and_then(|exp| OffsetDateTime::from_unix_timestamp(exp).ok())
+        {
+            if exp < OffsetDateTime::now_utc() {
+                bail!("Refresh token expired. You need to re-login.");
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn refresh_token_request(
+    http: &reqwest::Client,
+    client: &CoreClient<
+        EndpointSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointMaybeSet,
+        EndpointMaybeSet,
+    >,
+    scope: Option<&str>,
+    refresh_token: String,
+) -> anyhow::Result<CoreTokenResponse> {
+    check_refresh_token_expiration(&refresh_token)?;
+
+    Ok(client
+        .exchange_refresh_token(&RefreshToken::new(refresh_token))?
+        .add_scopes(extra_scopes(scope))
+        .request_async(http)
+        .await?)
 }

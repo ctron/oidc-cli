@@ -2,18 +2,18 @@ use crate::{
     cmd::create::CreateCommon,
     config::{Client, ClientType, Config},
     http::{HttpOptions, create_client},
-    oidc::extra_scopes,
+    oidc::{extra_scopes, refresh_token_request},
     server::{Bind, Server},
     utils::OrNone,
 };
 use anyhow::{Context, bail};
 use oauth2::{
-    AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl,
-    TokenResponse,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet,
+    EndpointSet, PkceCodeChallenge, RedirectUrl, TokenResponse,
 };
 use openidconnect::{
     AuthenticationFlow, IssuerUrl, Nonce,
-    core::{CoreClient, CoreProviderMetadata, CoreResponseType},
+    core::{CoreClient, CoreProviderMetadata, CoreResponseType, CoreTokenResponse},
 };
 use std::path::PathBuf;
 
@@ -33,6 +33,10 @@ pub struct CreatePublic {
     /// The client secret
     #[arg(short = 's', long)]
     pub client_secret: Option<String>,
+
+    /// A refresh token to start with, instead of the authorization code flow
+    #[arg(short = 'R', long)]
+    pub refresh_token: Option<String>,
 
     /// Force using a specific port for the local server
     #[arg(short, long)]
@@ -58,6 +62,15 @@ pub struct CreatePublic {
     pub http: HttpOptions,
 }
 
+type FlowClient = CoreClient<
+    EndpointSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointMaybeSet,
+    EndpointMaybeSet,
+>;
+
 impl CreatePublic {
     pub async fn run(self) -> anyhow::Result<()> {
         log::debug!("creating new client: {}", self.common.name);
@@ -71,9 +84,6 @@ impl CreatePublic {
             );
         }
 
-        let server = Server::new(self.bind_mode(), self.port).await?;
-        let redirect = format!("http://localhost:{}", server.port);
-
         let http = create_client(&self.http).await?;
 
         let provider_metadata = CoreProviderMetadata::discover_async(
@@ -86,8 +96,75 @@ impl CreatePublic {
             provider_metadata,
             ClientId::new(self.client_id.clone()),
             self.client_secret.clone().map(ClientSecret::new),
-        )
-        .set_redirect_uri(RedirectUrl::new(redirect)?);
+        );
+
+        let token = match self.refresh_token {
+            None => self.code_flow(&http, &client).await?,
+            Some(refresh_token) => {
+                refresh_token_request(&http, &client, self.common.scope.as_deref(), refresh_token)
+                    .await?
+            }
+        };
+
+        // log info
+
+        log::info!("First token:");
+        log::info!(
+            "       ID: {}",
+            OrNone(
+                &token
+                    .extra_fields()
+                    .id_token()
+                    .cloned()
+                    .map(|t| t.to_string())
+            )
+        );
+        log::info!("   Access: {}", token.access_token().clone().into_secret());
+        log::info!(
+            "  Refresh: {}",
+            OrNone(&token.refresh_token().cloned().map(|t| t.into_secret()))
+        );
+
+        // create client
+
+        let client = Client {
+            issuer_url: self.common.issuer,
+            scope: self.common.scope,
+            r#type: ClientType::Public {
+                client_id: self.client_id,
+                client_secret: self.client_secret,
+            },
+            state: Some(token.into()),
+        };
+
+        config
+            .clients
+            .insert(self.common.name.clone(), client.clone());
+
+        config.store(self.config.as_deref())?;
+
+        Ok(())
+    }
+
+    fn bind_mode(&self) -> Bind {
+        if self.only4 {
+            Bind::Only4
+        } else if self.only6 {
+            Bind::Only6
+        } else {
+            self.bind
+        }
+    }
+
+    async fn code_flow(
+        &self,
+        http: &reqwest::Client,
+        client: &FlowClient,
+    ) -> anyhow::Result<CoreTokenResponse> {
+        let server = Server::new(self.bind_mode(), self.port).await?;
+        let redirect = format!("http://localhost:{}", server.port);
+
+        let client = client.clone().set_redirect_uri(RedirectUrl::new(redirect)?);
 
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -138,7 +215,7 @@ Open the following URL in your browser and perform the interactive login process
         let token = client
             .exchange_code(AuthorizationCode::new(result.code))?
             .set_pkce_verifier(pkce_verifier)
-            .request_async(&http)
+            .request_async(http)
             .await?;
 
         // check ID token
@@ -150,53 +227,6 @@ Open the following URL in your browser and perform the interactive login process
                 .context("failed to verify ID token")?;
         }
 
-        // log info
-
-        log::info!("First token:");
-        log::info!(
-            "       ID: {}",
-            OrNone(
-                &token
-                    .extra_fields()
-                    .id_token()
-                    .cloned()
-                    .map(|t| t.to_string())
-            )
-        );
-        log::info!("   Access: {}", token.access_token().clone().into_secret());
-        log::info!(
-            "  Refresh: {}",
-            OrNone(&token.refresh_token().cloned().map(|t| t.into_secret()))
-        );
-
-        // create client
-
-        let client = Client {
-            issuer_url: self.common.issuer,
-            scope: self.common.scope,
-            r#type: ClientType::Public {
-                client_id: self.client_id,
-                client_secret: self.client_secret,
-            },
-            state: Some(token.into()),
-        };
-
-        config
-            .clients
-            .insert(self.common.name.clone(), client.clone());
-
-        config.store(self.config.as_deref())?;
-
-        Ok(())
-    }
-
-    fn bind_mode(&self) -> Bind {
-        if self.only4 {
-            Bind::Only4
-        } else if self.only6 {
-            Bind::Only6
-        } else {
-            self.bind
-        }
+        Ok(token)
     }
 }

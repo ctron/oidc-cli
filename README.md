@@ -66,3 +66,14 @@ Or even shorter:
 ```bash
 http example.com/api $(oidc token -H my-client)
 ```
+
+## More examples
+
+Create a public client from an initial refresh token. This can be useful if you have a frontend application, but no
+means
+of performing the authorization code flow with a local server. In case you have access to the refresh token, e.g via
+the browsers developer console, you can initialize the public client with that:
+
+```bash
+oidc create public my-client --issuer https://example.com/realm --client-id foo --refresh-token <refresh-token>
+```
