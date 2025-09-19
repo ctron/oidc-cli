@@ -33,7 +33,7 @@ directories = "6"
 humantime = "2"
 log = "0.4"
 open = "5"
-openidconnect = "4"
+openidconnect = { version = "4", features = ["accept-rfc3339-timestamps"] }
 oauth2 = "5"
 pretty-hex = "0.4.1"
 reqwest = "0.12"
