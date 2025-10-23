@@ -63,6 +63,8 @@ jobs:
             core.exportVariable('VCPKG_BINARY_SOURCES', 'clear;x-gha,readwrite');
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ${{ matrix.rust }}
 
       - name: Disable rustup auto update
         run: |
