@@ -66,15 +66,18 @@ jobs:
 
         include:
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-22.04
-            cross: "true"
+            os: ubuntu-22.04-arm
+            install: |
+              sudo apt install -y libssl-dev
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-22.04
             install: |
               sudo apt install -y libssl-dev
+
           - target: aarch64-unknown-linux-musl
-            os: ubuntu-22.04
-            cross: "true"
+            os: ubuntu-22.04-arm
+            install: |
+              sudo apt install -y musl-tools
             args: --features vendored
           - target: x86_64-unknown-linux-musl
             os: ubuntu-22.04
@@ -95,7 +98,6 @@ jobs:
             install: |
               echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
               vcpkg install openssl:x64-windows-static-md
-
           - target: aarch64-pc-windows-msvc
             os: windows-11-arm
             exe: ".exe"
@@ -147,14 +149,6 @@ jobs:
       - run: rustup target add ${{ matrix.target }}
         if: matrix.target != ''
 
-      - name: Prepare cross
-        if: matrix.cross == 'true'
-        run: |
-          curl -sSL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz -o binstall.tar.gz
-          tar xzf binstall.tar.gz
-          mv cargo-binstall $HOME/.cargo/bin/
-          cargo binstall cross -y
-
       - name: Build
         shell: bash
         run: |
@@ -172,10 +166,6 @@ jobs:
           OPTS="$OPTS ${{ matrix.args }}"
           
           CMD="cargo"
-          
-          if [[ -n "${{ matrix.cross }}" ]]; then
-            CMD="cross"
-          fi
           
           ${CMD} build ${OPTS}
 
