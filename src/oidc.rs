@@ -8,7 +8,7 @@ use anyhow::{anyhow, bail};
 use biscuit::{Empty, jws::Compact};
 use oauth2::{EndpointMaybeSet, EndpointNotSet, EndpointSet, RefreshToken};
 use openidconnect::{
-    ClientId, ClientSecret, IssuerUrl, Scope,
+    Audience, ClientId, ClientSecret, IssuerUrl, Scope,
     core::{CoreClient, CoreProviderMetadata, CoreTokenResponse},
 };
 use time::OffsetDateTime;
@@ -101,6 +101,18 @@ pub fn extra_scopes(scope: Option<&str>) -> impl Iterator<Item = Scope> {
         .into_iter()
         .flat_map(|s| s.split(' '))
         .map(|s| Scope::new(s.into()))
+}
+
+/// Other audiences specified in scope may be implicitly trusted.
+/// The `audience:server:client_id:{CLIENT_ID}` format originates with GoogleAuthUtil.
+/// See <https://github.com/ctron/oidc-cli/pull/14> for context and
+/// <https://dexidp.io/docs/configuration/custom-scopes-claims-clients/>.
+pub fn other_audiences(scope: Option<&str>) -> impl Iterator<Item = Audience> {
+    scope
+        .into_iter()
+        .flat_map(|s| s.split(' '))
+        .filter_map(|s| s.strip_prefix("audience:server:client_id:"))
+        .map(|aud| Audience::new(aud.into()))
 }
 
 pub fn check_refresh_token_expiration(refresh_token: &str) -> anyhow::Result<()> {
