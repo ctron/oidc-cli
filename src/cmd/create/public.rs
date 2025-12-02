@@ -2,7 +2,7 @@ use crate::{
     cmd::create::CreateCommon,
     config::{Client, ClientType, Config},
     http::{HttpOptions, create_client},
-    oidc::{extra_scopes, refresh_token_request},
+    oidc::{extra_scopes, other_audiences, refresh_token_request},
     server::{Bind, Server},
     utils::OrNone,
 };
@@ -221,9 +221,16 @@ Open the following URL in your browser and perform the interactive login process
         // check ID token
 
         if let Some(id_token) = token.extra_fields().id_token() {
+            let scopes = self.common.scope.as_deref();
+            let verifier =
+                client
+                    .id_token_verifier()
+                    .set_other_audience_verifier_fn(move |other| {
+                        other_audiences(scopes).any(|aud| other == &aud)
+                    });
             id_token
                 .clone()
-                .into_claims(&client.id_token_verifier(), &nonce)
+                .into_claims(&verifier, &nonce)
                 .context("failed to verify ID token")?;
         }
 
