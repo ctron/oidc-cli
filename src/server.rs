@@ -114,11 +114,11 @@ impl Server {
         let tx = Arc::new(Mutex::new(Some(tx)));
 
         tokio::spawn(async move {
-            if let Err(err) = run_http(acceptor, web::Data::new(State { tx: tx.clone() })).await {
-                if let Some(tx) = tx.lock().await.take() {
-                    // we still have a sender, we respond with our error
-                    let _ = tx.send(Err(err));
-                }
+            if let Err(err) = run_http(acceptor, web::Data::new(State { tx: tx.clone() })).await
+                && let Some(tx) = tx.lock().await.take()
+            {
+                // we still have a sender, we respond with our error
+                let _ = tx.send(Err(err));
             }
         });
 

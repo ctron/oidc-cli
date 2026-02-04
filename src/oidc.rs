@@ -86,10 +86,10 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
 pub async fn get_token(config: &Client, http: &HttpOptions) -> anyhow::Result<TokenResult> {
     if let Some(state) = &config.state {
         log::debug!("Token expires: {}", OrNone(&state.expires));
-        if let Some(expires) = state.expires {
-            if expires > OffsetDateTime::now_utc() {
-                return Ok(TokenResult::Existing(state.clone()));
-            }
+        if let Some(expires) = state.expires
+            && expires > OffsetDateTime::now_utc()
+        {
+            return Ok(TokenResult::Existing(state.clone()));
         }
     }
 
@@ -124,10 +124,9 @@ pub fn check_refresh_token_expiration(refresh_token: &str) -> anyhow::Result<()>
         if let Some(exp) = token
             .exp
             .and_then(|exp| OffsetDateTime::from_unix_timestamp(exp).ok())
+            && exp < OffsetDateTime::now_utc()
         {
-            if exp < OffsetDateTime::now_utc() {
-                bail!("Refresh token expired. You need to re-login.");
-            }
+            bail!("Refresh token expired. You need to re-login.");
         }
     }
 
