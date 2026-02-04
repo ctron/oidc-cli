@@ -10,8 +10,8 @@ repository = "https://github.com/ctron/oidc-cli"
 categories = ["command-line-utilities", "authentication"]
 keywords = ["oidc", "cli"]
 readme = "README.md"
-# based on edition 2024
-rust-version = "1.85"
+# based on comfy table, requiring more recent lang features
+rust-version = "1.88"
 
 [[bin]]
 name = "oidc"
