@@ -12,7 +12,7 @@ use oauth2::{
     EndpointSet, PkceCodeChallenge, RedirectUrl, TokenResponse,
 };
 use openidconnect::{
-    AuthenticationFlow, IssuerUrl, Nonce,
+    AuthenticationFlow, Nonce,
     core::{CoreClient, CoreProviderMetadata, CoreResponseType, CoreTokenResponse},
 };
 use std::path::PathBuf;
@@ -86,11 +86,8 @@ impl CreatePublic {
 
         let http = create_client(&self.http).await?;
 
-        let provider_metadata = CoreProviderMetadata::discover_async(
-            IssuerUrl::from_url(self.common.issuer.clone()),
-            &http,
-        )
-        .await?;
+        let provider_metadata =
+            CoreProviderMetadata::discover_async(self.common.issuer.clone(), &http).await?;
 
         let client = CoreClient::from_provider_metadata(
             provider_metadata,

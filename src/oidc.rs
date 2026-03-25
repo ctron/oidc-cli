@@ -8,7 +8,7 @@ use anyhow::{anyhow, bail};
 use biscuit::{Empty, jws::Compact};
 use oauth2::{EndpointMaybeSet, EndpointNotSet, EndpointSet, RefreshToken};
 use openidconnect::{
-    Audience, ClientId, ClientSecret, IssuerUrl, Scope,
+    Audience, ClientId, ClientSecret, Scope,
     core::{CoreClient, CoreProviderMetadata, CoreTokenResponse},
 };
 use time::OffsetDateTime;
@@ -29,11 +29,8 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
             client_id,
             client_secret,
         } => {
-            let provider_metadata = CoreProviderMetadata::discover_async(
-                IssuerUrl::from_url(config.issuer_url.clone()),
-                &http,
-            )
-            .await?;
+            let provider_metadata =
+                CoreProviderMetadata::discover_async(config.issuer_url.clone(), &http).await?;
 
             let client = CoreClient::from_provider_metadata(
                 provider_metadata,
@@ -59,11 +56,8 @@ pub async fn fetch_token(config: &Client, http: &HttpOptions) -> anyhow::Result<
                 );
             };
 
-            let provider_metadata = CoreProviderMetadata::discover_async(
-                IssuerUrl::from_url(config.issuer_url.clone()),
-                &http,
-            )
-            .await?;
+            let provider_metadata =
+                CoreProviderMetadata::discover_async(config.issuer_url.clone(), &http).await?;
 
             let refresh_token = state.refresh_token.clone().ok_or_else(|| anyhow!("Expired token of a public client, without having a refresh token. You will need to re-login."))?;
 

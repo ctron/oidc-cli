@@ -8,6 +8,7 @@ mod token;
 use std::process::ExitCode;
 
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Command {
     Create(create::Create),
     Delete(delete::Delete),
