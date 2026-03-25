@@ -2,7 +2,7 @@ mod confidential;
 mod public;
 
 use crate::cmd::create::{confidential::CreateConfidential, public::CreatePublic};
-use url::Url;
+use openidconnect::IssuerUrl;
 
 /// Create a new client
 #[derive(Debug, clap::Parser)]
@@ -32,12 +32,16 @@ pub struct CreateCommon {
     pub skip_initial: bool,
 
     /// URL of the issuer
-    #[arg(long)]
-    pub issuer: Url,
+    #[arg(long, value_parser(parse_issuer))]
+    pub issuer: IssuerUrl,
 
     /// Additional scope
     #[arg(short = 'S', long)]
     pub scope: Option<String>,
+}
+
+fn parse_issuer(s: &str) -> Result<IssuerUrl, anyhow::Error> {
+    Ok(IssuerUrl::new(s.to_string())?)
 }
 
 #[derive(Debug, clap::Subcommand)]

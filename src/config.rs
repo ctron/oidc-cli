@@ -1,5 +1,6 @@
 use anyhow::{Context, anyhow};
 use oauth2::TokenResponse;
+use openidconnect::IssuerUrl;
 use openidconnect::core::CoreTokenResponse;
 use std::{
     collections::BTreeMap,
@@ -7,7 +8,6 @@ use std::{
     io::{BufReader, BufWriter, ErrorKind},
     path::{Path, PathBuf},
 };
-use url::Url;
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Config {
@@ -83,7 +83,7 @@ impl Config {
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Client {
-    pub issuer_url: Url,
+    pub issuer_url: IssuerUrl,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scope: Option<String>,
     pub r#type: ClientType,
