@@ -15,7 +15,7 @@ permissions:
 jobs:
 
   init:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-slim
     outputs:
       version: ${{steps.version.outputs.version}}
       prerelease: ${{steps.state.outputs.prerelease}}
@@ -114,7 +114,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -186,7 +186,7 @@ jobs:
           cp -pv "${SRC}" upload/oidc-${{ matrix.target }}${{ matrix.exe }}
 
       - name: Upload binary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: oidc-${{ matrix.target }}
           path: upload/oidc-${{ matrix.target }}${{ matrix.exe }}
@@ -198,7 +198,7 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -212,7 +212,7 @@ jobs:
         run: |
           convco changelog -s --max-majors=1 --max-minors=1 --max-patches=1 -n > /tmp/changelog.md
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: ~/download
 
