@@ -119,7 +119,7 @@ jobs:
           fetch-depth: 0
 
       - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: runner.os == 'Windows'
         with:
           script: |
