@@ -53,14 +53,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v8
+      - name: Configure vcpkg binary cache
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          "VCPKG_DEFAULT_BINARY_CACHE=${{ runner.temp }}\vcpkg-binary-cache" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}\vcpkg-binary-cache,readwrite" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Cache vcpkg binaries
+        uses: actions/cache@v5
         if: runner.os == 'Windows'
         with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-            core.exportVariable('VCPKG_BINARY_SOURCES', 'clear;x-gha,readwrite');
+          path: ${{ runner.temp }}/vcpkg-binary-cache
+          key: ${{ runner.os }}-vcpkg-${{ matrix.rust }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-${{ matrix.rust }}-
 
       - uses: Swatinem/rust-cache@v2
         with:
