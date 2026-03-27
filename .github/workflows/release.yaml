@@ -120,10 +120,12 @@ jobs:
 
       - name: Configure vcpkg binary cache
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: bash
         run: |
-          "VCPKG_DEFAULT_BINARY_CACHE=${{ runner.temp }}\vcpkg-binary-cache" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}\vcpkg-binary-cache,readwrite" | Out-File -FilePath $env:GITHUB_ENV -Append
+          cache_dir="${{ runner.temp }}/vcpkg-binary-cache"
+          mkdir -p "$cache_dir"
+          echo "VCPKG_DEFAULT_BINARY_CACHE=$cache_dir" >> "$GITHUB_ENV"
+          echo "VCPKG_BINARY_SOURCES=clear;files,$cache_dir,readwrite" >> "$GITHUB_ENV"
 
       - name: Cache vcpkg binaries
         uses: actions/cache@v5
