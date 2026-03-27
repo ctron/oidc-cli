@@ -255,6 +255,6 @@ jobs:
         uses: vedantmgoyal9/winget-releaser@7bd472be23763def6e16bd06cc8b1cdfab0e2fd5 # v2
         with:
           identifier: ctron.oidc
-          installers-regex: 'oidc-x86_64-pc-windows-msvc\.exe$'
+          installers-regex: 'oidc-(x86_64|aarch64)-pc-windows-msvc\.exe$'
           release-tag: v${{ needs.init.outputs.version }}
           token: ${{ secrets.WINGET_TOKEN }}
