@@ -8,32 +8,38 @@
 
 ## Installation
 
-From source with `cargo`:
+* Download a released binary: https://github.com/ctron/oidc-cli/releases
 
-```bash
-cargo install oidc-cli
-```
+* From source with `cargo`:
 
-A binary with `cargo-binstall`:
+  ```bash
+  cargo install oidc-cli
+  ```
 
-```bash
-cargo binstall oidc-cli
-```
+* A binary with `cargo-binstall`:
 
-Download a released binary: https://github.com/ctron/oidc-cli/releases
+  ```bash
+  cargo binstall oidc-cli
+  ```
 
-On Windows, you can use `winget`:
+* On Windows, you can use `winget`:
 
-```bash
-winget install ctron.oidc
-```
+  ```commandline
+  winget install ctron.oidc
+  ```
 
-With `brew` to you can:
+* With `brew` to you can:
 
-```bash
-brew tap ctron/tap
-brew install ctron/tap/oidc
-```
+  ```bash
+  brew tap ctron/tap
+  brew install ctron/tap/oidc
+  ```
+
+* With `snap` you can:
+
+  ```bash
+  snap install oidc
+  ```
 
 ## Example
 
