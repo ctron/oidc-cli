@@ -73,6 +73,12 @@ Or even shorter:
 http example.com/api $(oidc token -H my-client)
 ```
 
+This also works with `curl`:
+
+```bash
+curl http://example.com/api -H $(oidc token -H my-client)
+```
+
 ## More examples
 
 Create a public client from an initial refresh token. This can be useful if you have a frontend application, but no
