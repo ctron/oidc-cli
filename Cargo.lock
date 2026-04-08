@@ -339,9 +339,9 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "biscuit"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e28fc7c56c61743a01d0d1b73e4fed68b8a4f032ea3a2d4bb8c6520a33fc05a"
+checksum = "2dbfddc8cc5cc927876d9f138e7ded44c6116c544d3cca2c3a2759e46ba916c7"
 dependencies = [
  "chrono",
  "data-encoding",

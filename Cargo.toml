@@ -24,7 +24,7 @@ pkg-fmt = "bin"
 [dependencies]
 actix-web = { version = "4", features = ["openssl"] }
 anyhow = "1"
-biscuit = "0.7"
+biscuit = "0.8"
 clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 colored_json = "5"
