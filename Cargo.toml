@@ -1,6 +1,6 @@
 [package]
 name = "oidc-cli"
-version = "0.7.3"
+version = "0.8.0"
 edition = "2024"
 description = "A command line tool to work with OIDC tokens"
 
@@ -11,7 +11,7 @@ categories = ["command-line-utilities", "authentication"]
 keywords = ["oidc", "cli"]
 readme = "README.md"
 # based on comfy table, requiring more recent lang features
-rust-version = "1.88"
+rust-version = "1.95"
 
 [[bin]]
 name = "oidc"
