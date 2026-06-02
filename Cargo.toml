@@ -1,6 +1,6 @@
 [package]
 name = "oidc-cli"
-version = "0.7.3"
+version = "0.8.0"
 edition = "2024"
 description = "A command line tool to work with OIDC tokens"
 
@@ -11,11 +11,15 @@ categories = ["command-line-utilities", "authentication"]
 keywords = ["oidc", "cli"]
 readme = "README.md"
 # based on comfy table, requiring more recent lang features
-rust-version = "1.88"
+rust-version = "1.95"
 
 [[bin]]
 name = "oidc"
 path = "src/main.rs"
+
+[[bin]]
+name = "xh-plugin-oidc"
+path = "src/bin/xh-plugin-oidc.rs"
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/oidc-{ target }{ binary-ext }"
@@ -43,6 +47,7 @@ serde_yaml = "0.9"
 simplelog = "0.12"
 time = { version = "0.3", features = ["serde-well-known", "formatting"] }
 tokio = { version = "1.36", features = ["full"] }
+toml = "1.1.2"
 url = "2"
 
 openssl = "0.10" # transient dependency, required for vendoring

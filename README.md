@@ -79,6 +79,35 @@ This also works with `curl`:
 curl http://example.com/api -H $(oidc token -H my-client)
 ```
 
+## XH integration
+
+Use the `xh-plugin-oidc` binary with `xh` custom auth plugins:
+
+```bash
+xh --auth-type=plugin:oidc --auth=my-client https://example.com/api
+```
+
+The `xh-plugin-oidc` binary can also discover the client name from a local config file. Starting from
+the current directory, it walks up parent directories and searches for `.xh-auth-oidc.json`,
+`.xh-auth-oidc.yaml`, then `.xh-auth-oidc.toml`:
+
+```toml
+client_name = "my-client"
+
+[http]
+timeout = "60s"
+connect_timeout = "30s"
+min_tls_version = "1.2"
+disable_system_certificates = false
+additional_root_certificates = []
+```
+
+Then the client name does not need to be passed to `xh`:
+
+```bash
+xh --auth-type=plugin:oidc https://example.com/api
+```
+
 ## More examples
 
 Create a public client from an initial refresh token. This can be useful if you have a frontend application, but no
