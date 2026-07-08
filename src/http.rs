@@ -1,22 +1,27 @@
 use anyhow::Context;
 use reqwest::{header, tls::Version};
+use serde::Deserialize;
 use std::path::PathBuf;
 
 const USER_AGENT: &str = concat!("OIDC-CLI/", env!("CARGO_PKG_VERSION"));
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, clap::ValueEnum)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, clap::ValueEnum, Deserialize)]
 pub enum TlsVersion {
     /// TLS 1.0
     #[value(name("1.0"))]
+    #[serde(rename = "1.0")]
     Tls1_0,
     /// TLS 1.1
     #[value(name("1.1"))]
+    #[serde(rename = "1.1")]
     Tls1_1,
     /// TLS 1.2
     #[value(name("1.2"))]
+    #[serde(rename = "1.2")]
     Tls1_2,
     /// TLS 1.3
     #[value(name("1.3"))]
+    #[serde(rename = "1.3")]
     Tls1_3,
 }
 
@@ -32,8 +37,9 @@ impl From<TlsVersion> for Version {
 }
 
 /// HTTP client options
-#[derive(Clone, Debug, PartialEq, Eq, clap::Args)]
+#[derive(Clone, Debug, PartialEq, Eq, clap::Args, Deserialize)]
 #[command(next_help_heading = "HTTP client options")]
+#[serde(default)]
 pub struct HttpOptions {
     /// Disable TLS validation (INSECURE!)
     #[arg(long)]
@@ -49,15 +55,62 @@ pub struct HttpOptions {
 
     /// Connect timeout
     #[arg(long, default_value = "30s")]
+    #[serde(
+        default = "default::connect_timeout",
+        deserialize_with = "deserialize_duration"
+    )]
     pub connect_timeout: humantime::Duration,
 
     /// Request timeout
     #[arg(long, default_value = "60s", short = 't')]
+    #[serde(
+        default = "default::timeout",
+        deserialize_with = "deserialize_duration"
+    )]
     pub timeout: humantime::Duration,
 
     /// Minimum TLS version
     #[arg(long, value_enum, default_value_t = TlsVersion::Tls1_2)]
+    #[serde(default = "default::min_tls_version")]
     pub min_tls_version: TlsVersion,
+}
+
+impl Default for HttpOptions {
+    fn default() -> Self {
+        Self {
+            tls_insecure: false,
+            additional_root_certificates: Vec::new(),
+            disable_system_certificates: false,
+            connect_timeout: default::connect_timeout(),
+            timeout: default::timeout(),
+            min_tls_version: default::min_tls_version(),
+        }
+    }
+}
+
+mod default {
+    use super::TlsVersion;
+
+    pub(super) fn connect_timeout() -> humantime::Duration {
+        std::time::Duration::from_secs(30).into()
+    }
+
+    pub(super) fn timeout() -> humantime::Duration {
+        std::time::Duration::from_secs(60).into()
+    }
+
+    pub(super) fn min_tls_version() -> TlsVersion {
+        TlsVersion::Tls1_2
+    }
+}
+
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<humantime::Duration, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    String::deserialize(deserializer)?
+        .parse()
+        .map_err(serde::de::Error::custom)
 }
 
 /// A common way to create an HTTP client
