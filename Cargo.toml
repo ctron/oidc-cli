@@ -17,12 +17,15 @@ rust-version = "1.89"
 name = "oidc"
 path = "src/main.rs"
 
+[package.metadata.cargo-all-features]
+always_include_features = ["native-tls"]
+
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/oidc-{ target }{ binary-ext }"
 pkg-fmt = "bin"
 
 [dependencies]
-actix-web = { version = "4", features = ["openssl"] }
+actix-web = "4"
 anyhow = "1"
 biscuit = "0.8"
 clap = { version = "4", features = ["derive", "env"] }
@@ -32,11 +35,11 @@ comfy-table = "7"
 directories = "6"
 humantime = "2"
 log = "0.4"
+oauth2 = { version = "5", default-features = false, features = ["reqwest"] }
 open = "5"
-openidconnect = { version = "4", features = ["accept-rfc3339-timestamps"] }
-oauth2 = "5"
+openidconnect = { version = "4", default-features = false, features = ["accept-rfc3339-timestamps", "reqwest"] }
 pretty-hex = "0.4.1"
-reqwest = "0.12" # keep aligned with openidconnect
+reqwest = { version = "0.12", default-features = false } # keep aligned with openidconnect
 rmcp = { version = "2", features = ["server", "transport-io", "macros"], optional = true }
 schemars = { version = "1", optional = true }
 serde = { version = "1", features = ["derive"] }
@@ -47,11 +50,8 @@ time = { version = "0.3", features = ["serde-well-known", "formatting"] }
 tokio = { version = "1.36", features = ["full"] }
 url = "2"
 
-openssl = "0.10" # transient dependency, required for vendoring
-
 [features]
-default = ["mcp"]
+default = ["native-tls", "mcp"]
+native-tls = ["openidconnect/native-tls", "oauth2/native-tls", "reqwest/default-tls"]
+rustls = ["openidconnect/rustls-tls", "oauth2/rustls-tls", "reqwest/rustls-tls"]
 mcp = ["dep:rmcp", "dep:schemars"]
-vendored = [
-    "openssl/vendored"
-]
