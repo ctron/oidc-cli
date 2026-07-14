@@ -82,38 +82,38 @@ impl OidcMcpServer {
         &self,
         Parameters(params): Parameters<GetTokenParams>,
     ) -> Result<CallToolResult, rmcp::ErrorData> {
-        let mut config = Config::load(self.config_path.as_deref()).map_err(|e| {
-            rmcp::ErrorData::internal_error(format!("failed to load config: {e}"), None)
-        })?;
+        let http = self.http.clone();
+        let token_type = params.token_type.clone();
 
-        let client = config.by_name_mut(&params.name).ok_or_else(|| {
-            rmcp::ErrorData::invalid_params(format!("unknown client '{}'", params.name), None)
-        })?;
+        let token_value = Config::locked(self.config_path.as_deref(), async |config| {
+            let client = config
+                .by_name_mut(&params.name)
+                .ok_or_else(|| anyhow::anyhow!("unknown client '{}'", params.name))?;
 
-        let token = get_token(client, &self.http).await.map_err(|e| {
-            rmcp::ErrorData::internal_error(format!("failed to get token: {e}"), None)
-        })?;
+            let token = get_token(client, &http).await?;
 
-        let state = match token {
-            TokenResult::Refreshed(state) => {
-                client.state = Some(state.clone());
-                config.store(self.config_path.as_deref()).map_err(|e| {
-                    rmcp::ErrorData::internal_error(format!("failed to store config: {e}"), None)
-                })?;
-                state
-            }
-            TokenResult::Existing(state) => state,
-        };
+            let state = match token {
+                TokenResult::Refreshed(state) => {
+                    client.state = Some(state.clone());
+                    state
+                }
+                TokenResult::Existing(state) => state,
+            };
 
-        let token_value = match params.token_type.as_str() {
-            "id" => state
-                .id_token
-                .ok_or_else(|| rmcp::ErrorData::invalid_params("ID token not available", None))?,
-            "refresh" => state.refresh_token.ok_or_else(|| {
-                rmcp::ErrorData::invalid_params("refresh token not available", None)
-            })?,
-            _ => state.access_token,
-        };
+            let token_value = match token_type.as_str() {
+                "id" => state
+                    .id_token
+                    .ok_or_else(|| anyhow::anyhow!("ID token not available"))?,
+                "refresh" => state
+                    .refresh_token
+                    .ok_or_else(|| anyhow::anyhow!("refresh token not available"))?,
+                _ => state.access_token,
+            };
+
+            Ok(token_value)
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("{e}"), None))?;
 
         Ok(CallToolResult::success(vec![ContentBlock::text(
             token_value,

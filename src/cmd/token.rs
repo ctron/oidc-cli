@@ -51,42 +51,40 @@ pub struct GetToken {
 
 impl GetToken {
     pub async fn run(self) -> anyhow::Result<()> {
-        let mut config = Config::load(self.config.as_deref())?;
+        let token = Config::locked(self.config.as_deref(), async |config| {
+            let client = config
+                .by_name_mut(&self.name)
+                .ok_or_else(|| anyhow!("unknown client '{}'", self.name))?;
 
-        let client = config
-            .by_name_mut(&self.name)
-            .ok_or_else(|| anyhow!("unknown client '{}'", self.name))?;
+            let token = match self.force {
+                true => fetch_token(client, &self.http).await?,
+                false => get_token(client, &self.http).await?,
+            };
 
-        let token = match self.force {
-            true => fetch_token(client, &self.http).await?,
-            false => get_token(client, &self.http).await?,
-        };
+            let state = match token {
+                TokenResult::Refreshed(token) => {
+                    log::info!("Got a refreshed token. Storing new state.");
+                    client.state = Some(token.clone());
+                    token
+                }
+                TokenResult::Existing(token) => token,
+            };
 
-        let token = match token {
-            TokenResult::Refreshed(token) => {
-                log::info!("Got a refreshed token. Storing new state.");
-                // update client state
-                client.state = Some(token.clone());
+            let token = if self.id {
+                state
+                    .id_token
+                    .ok_or_else(|| anyhow!("ID token not available"))?
+            } else if self.refresh {
+                state
+                    .refresh_token
+                    .ok_or_else(|| anyhow!("refresh token not available"))?
+            } else {
+                state.access_token
+            };
 
-                config.store(self.config.as_deref())?;
-
-                token
-            }
-            TokenResult::Existing(token) => token,
-        };
-
-        let token = if self.id {
-            token
-                .id_token
-                .ok_or_else(|| anyhow!("ID token not available"))?
-        } else if self.refresh {
-            token
-                .refresh_token
-                .ok_or_else(|| anyhow!("refresh token not available"))?
-        } else {
-            // access is the default
-            token.access_token
-        };
+            Ok(token)
+        })
+        .await?;
 
         match (self.bearer, self.header, self.inspect) {
             (true, _, _) => {
