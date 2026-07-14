@@ -43,33 +43,11 @@ jobs:
           - os: ubuntu-latest
             install: |
               sudo apt install -y libssl-dev
-          - os: windows-latest
-            install: |
-              echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-              vcpkg install openssl:x64-windows-static-md
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v7
-
-      - name: Configure vcpkg binary cache
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          cache_dir="${{ runner.temp }}/vcpkg-binary-cache"
-          mkdir -p "$cache_dir"
-          echo "VCPKG_DEFAULT_BINARY_CACHE=$cache_dir" >> "$GITHUB_ENV"
-          echo "VCPKG_BINARY_SOURCES=clear;files,$cache_dir,readwrite" >> "$GITHUB_ENV"
-
-      - name: Cache vcpkg binaries
-        uses: actions/cache@v6
-        if: runner.os == 'Windows'
-        with:
-          path: ${{ runner.temp }}/vcpkg-binary-cache
-          key: ${{ runner.os }}-vcpkg-${{ matrix.rust }}-${{ hashFiles('.github/workflows/ci.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-${{ matrix.rust }}-
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -85,6 +63,7 @@ jobs:
           rustup toolchain install ${{ matrix.rust }} --component clippy
 
       - name: Install dependencies
+        if: matrix.install
         run: ${{ matrix.install }}
 
       - name: Check
