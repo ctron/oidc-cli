@@ -3,6 +3,8 @@ mod create;
 mod delete;
 mod inspect;
 mod list;
+#[cfg(feature = "mcp")]
+mod mcp;
 mod token;
 
 use std::process::ExitCode;
@@ -16,6 +18,8 @@ pub enum Command {
     List(list::List),
     Inspect(inspect::Inspect),
     Completion(completion::GetCompletion),
+    #[cfg(feature = "mcp")]
+    Mcp(mcp::Mcp),
 }
 
 impl Command {
@@ -27,6 +31,8 @@ impl Command {
             Self::List(cmd) => cmd.run().await,
             Self::Inspect(cmd) => cmd.run().await,
             Self::Completion(cmd) => cmd.run().await,
+            #[cfg(feature = "mcp")]
+            Self::Mcp(cmd) => cmd.run().await,
         }
         .map(|()| ExitCode::SUCCESS)
     }
