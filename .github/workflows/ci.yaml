@@ -32,7 +32,7 @@ jobs:
 
         rust:
           - stable
-          - "1.88" # MSRV
+          - "1.89" # MSRV
 
         os:
           - ubuntu-latest

@@ -33,48 +33,47 @@ impl CreateConfidential {
     pub async fn run(self) -> anyhow::Result<()> {
         log::debug!("creating new client: {}", self.common.name);
 
-        let mut config = Config::load(self.config.as_deref())?;
+        Config::locked(self.config.as_deref(), async |config| {
+            if !self.common.force && config.clients.contains_key(&self.common.name) {
+                bail!(
+                    "A client named '{}' already exists. You need to delete it first or use --force",
+                    self.common.name
+                );
+            }
 
-        if !self.common.force && config.clients.contains_key(&self.common.name) {
-            bail!(
-                "A client named '{}' already exists. You need to delete it first or use --force",
-                self.common.name
-            );
-        }
-
-        let mut client = Client {
-            issuer_url: self.common.issuer,
-            scope: self.common.scope,
-            r#type: ClientType::Confidential {
-                client_id: self.client_id,
-                client_secret: self.client_secret,
-            },
-            state: None,
-        };
-
-        if !self.common.skip_initial {
-            let token = get_token(&client, &self.http)
-                .await
-                .context("failed retrieving first token")?;
-
-            let token = match token {
-                TokenResult::Refreshed(token) | TokenResult::Existing(token) => token,
+            let mut client = Client {
+                issuer_url: self.common.issuer.clone(),
+                scope: self.common.scope.clone(),
+                r#type: ClientType::Confidential {
+                    client_id: self.client_id.clone(),
+                    client_secret: self.client_secret.clone(),
+                },
+                state: None,
             };
 
-            log::info!("First token:");
-            log::info!("       ID: {}", OrNone(&token.id_token));
-            log::info!("   Access: {}", token.access_token);
-            log::info!("  Refresh: {}", OrNone(&token.refresh_token));
+            if !self.common.skip_initial {
+                let token = get_token(&client, &self.http)
+                    .await
+                    .context("failed retrieving first token")?;
 
-            client.state = Some(token);
-        }
+                let token = match token {
+                    TokenResult::Refreshed(token) | TokenResult::Existing(token) => token,
+                };
 
-        config
-            .clients
-            .insert(self.common.name.clone(), client.clone());
+                log::info!("First token:");
+                log::info!("       ID: {}", OrNone(&token.id_token));
+                log::info!("   Access: {}", token.access_token);
+                log::info!("  Refresh: {}", OrNone(&token.refresh_token));
 
-        config.store(self.config.as_deref())?;
+                client.state = Some(token);
+            }
 
-        Ok(())
+            config
+                .clients
+                .insert(self.common.name.clone(), client.clone());
+
+            Ok(())
+        })
+        .await
     }
 }

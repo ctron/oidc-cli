@@ -75,72 +75,72 @@ impl CreatePublic {
     pub async fn run(self) -> anyhow::Result<()> {
         log::debug!("creating new client: {}", self.common.name);
 
-        let mut config = Config::load(self.config.as_deref())?;
-
-        if !self.common.force && config.clients.contains_key(&self.common.name) {
-            bail!(
-                "A client named '{}' already exists. You need to delete it first or use --force",
-                self.common.name
-            );
-        }
-
-        let http = create_client(&self.http).await?;
-
-        let provider_metadata =
-            CoreProviderMetadata::discover_async(self.common.issuer.clone(), &http).await?;
-
-        let client = CoreClient::from_provider_metadata(
-            provider_metadata,
-            ClientId::new(self.client_id.clone()),
-            self.client_secret.clone().map(ClientSecret::new),
-        );
-
-        let token = match self.refresh_token {
-            None => self.code_flow(&http, &client).await?,
-            Some(refresh_token) => {
-                refresh_token_request(&http, &client, self.common.scope.as_deref(), refresh_token)
-                    .await?
+        Config::locked(self.config.as_deref(), async |config| {
+            if !self.common.force && config.clients.contains_key(&self.common.name) {
+                bail!(
+                    "A client named '{}' already exists. You need to delete it first or use --force",
+                    self.common.name
+                );
             }
-        };
 
-        // log info
+            let http = create_client(&self.http).await?;
 
-        log::info!("First token:");
-        log::info!(
-            "       ID: {}",
-            OrNone(
-                &token
-                    .extra_fields()
-                    .id_token()
-                    .cloned()
-                    .map(|t| t.to_string())
-            )
-        );
-        log::info!("   Access: {}", token.access_token().clone().into_secret());
-        log::info!(
-            "  Refresh: {}",
-            OrNone(&token.refresh_token().cloned().map(|t| t.into_secret()))
-        );
+            let provider_metadata =
+                CoreProviderMetadata::discover_async(self.common.issuer.clone(), &http).await?;
 
-        // create client
+            let client = CoreClient::from_provider_metadata(
+                provider_metadata,
+                ClientId::new(self.client_id.clone()),
+                self.client_secret.clone().map(ClientSecret::new),
+            );
 
-        let client = Client {
-            issuer_url: self.common.issuer,
-            scope: self.common.scope,
-            r#type: ClientType::Public {
-                client_id: self.client_id,
-                client_secret: self.client_secret,
-            },
-            state: Some(token.into()),
-        };
+            let token = match &self.refresh_token {
+                None => self.code_flow(&http, &client).await?,
+                Some(refresh_token) => {
+                    refresh_token_request(
+                        &http,
+                        &client,
+                        self.common.scope.as_deref(),
+                        refresh_token.clone(),
+                    )
+                    .await?
+                }
+            };
 
-        config
-            .clients
-            .insert(self.common.name.clone(), client.clone());
+            log::info!("First token:");
+            log::info!(
+                "       ID: {}",
+                OrNone(
+                    &token
+                        .extra_fields()
+                        .id_token()
+                        .cloned()
+                        .map(|t| t.to_string())
+                )
+            );
+            log::info!("   Access: {}", token.access_token().clone().into_secret());
+            log::info!(
+                "  Refresh: {}",
+                OrNone(&token.refresh_token().cloned().map(|t| t.into_secret()))
+            );
 
-        config.store(self.config.as_deref())?;
+            let client = Client {
+                issuer_url: self.common.issuer.clone(),
+                scope: self.common.scope.clone(),
+                r#type: ClientType::Public {
+                    client_id: self.client_id.clone(),
+                    client_secret: self.client_secret.clone(),
+                },
+                state: Some(token.into()),
+            };
 
-        Ok(())
+            config
+                .clients
+                .insert(self.common.name.clone(), client.clone());
+
+            Ok(())
+        })
+        .await
     }
 
     fn bind_mode(&self) -> Bind {
@@ -191,11 +191,7 @@ Open the following URL in your browser and perform the interactive login process
             );
         }
 
-        // receive the result from the local server
-
         let result = server.receive_token().await?;
-
-        // validate CSRF token
 
         match result.state {
             None => {
@@ -207,15 +203,11 @@ Open the following URL in your browser and perform the interactive login process
             Some(_) => {}
         }
 
-        // fetch token
-
         let token = client
             .exchange_code(AuthorizationCode::new(result.code))?
             .set_pkce_verifier(pkce_verifier)
             .request_async(http)
             .await?;
-
-        // check ID token
 
         if let Some(id_token) = token.extra_fields().id_token() {
             let scopes = self.common.scope.as_deref();

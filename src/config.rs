@@ -43,14 +43,7 @@ impl Config {
         }
     }
 
-    pub fn store(&self, path: Option<impl AsRef<Path>>) -> anyhow::Result<()> {
-        match path {
-            Some(path) => self.store_to(path),
-            None => self.store_to(Self::default_file_err()?),
-        }
-    }
-
-    pub fn store_to(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+    fn store_to(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
         let path = path.as_ref();
         log::debug!("storing configuration to: {}", path.display());
 
@@ -79,6 +72,53 @@ impl Config {
     pub fn by_name_mut(&mut self, name: &str) -> Option<&mut Client> {
         self.clients.get_mut(name)
     }
+
+    /// Execute an async closure with exclusive file-system lock on the config.
+    ///
+    /// Acquires an advisory lock on a sidecar `.lock` file, loads the config,
+    /// passes it to the closure, and stores the config back if the closure
+    /// returns `Ok`. The lock is released when the file is dropped.
+    pub async fn locked<F, T>(path: Option<&Path>, f: F) -> anyhow::Result<T>
+    where
+        F: AsyncFnOnce(&mut Config) -> anyhow::Result<T>,
+    {
+        let config_path = match path {
+            Some(p) => p.to_path_buf(),
+            None => Self::default_file_err()?,
+        };
+        let lock_path = lock_path_for(&config_path);
+
+        if let Some(parent) = lock_path.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("creating lock file directory: {}", parent.display()))?;
+        }
+
+        let lock_file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(false)
+            .open(&lock_path)
+            .with_context(|| format!("opening lock file: {}", lock_path.display()))?;
+
+        let lock_file = tokio::task::spawn_blocking(move || lock_file.lock().map(|()| lock_file))
+            .await?
+            .with_context(|| format!("acquiring lock: {}", lock_path.display()))?;
+
+        let mut config = Self::load_from(&config_path)?;
+        let result = f(&mut config).await?;
+        config.store_to(&config_path)?;
+
+        drop(lock_file);
+
+        Ok(result)
+    }
+}
+
+/// Derive the lock file path from a config file path.
+fn lock_path_for(config_path: &Path) -> PathBuf {
+    let mut lock_path = config_path.as_os_str().to_owned();
+    lock_path.push(".lock");
+    PathBuf::from(lock_path)
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
