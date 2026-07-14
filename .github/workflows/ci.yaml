@@ -96,11 +96,29 @@ jobs:
       - name: Test
         run: cargo +${{ matrix.rust }} test --workspace ${{ matrix.args }} -- --nocapture
 
+  features:
+    needs: fmt
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install dependencies
+        run: sudo apt install -y libssl-dev
+
+      - name: Install cargo-all-features
+        run: cargo install cargo-all-features
+
+      - name: Check all feature combinations
+        run: cargo check-all-features
+
   ci:
     runs-on: ubuntu-latest
     needs:
       - fmt
       - test
+      - features
     if: always()
     steps:
       - name: Success

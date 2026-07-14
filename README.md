@@ -79,6 +79,31 @@ This also works with `curl`:
 curl http://example.com/api -H $(oidc token -H my-client)
 ```
 
+## MCP Server
+
+`oidc-cli` includes a built-in [MCP](https://modelcontextprotocol.io/) server that lets AI assistants retrieve OIDC
+tokens for configured clients. This is useful when you want AI-powered tools to make authenticated API calls on your
+behalf.
+
+First, set up your OIDC clients as usual (see above). Then start the MCP server:
+
+```bash
+oidc mcp
+```
+
+The server communicates over stdio and exposes two tools:
+
+* **`list_clients`** — lists all configured OIDC clients with their issuer URL and token status
+* **`get_token`** — retrieves a valid token for a named client, automatically refreshing if expired
+
+### Claude Code
+
+To register the MCP server with [Claude Code](https://docs.anthropic.com/en/docs/claude-code):
+
+```bash
+claude mcp add oidc -- oidc mcp
+```
+
 ## More examples
 
 Create a public client from an initial refresh token. This can be useful if you have a frontend application, but no
