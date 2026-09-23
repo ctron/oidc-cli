@@ -235,7 +235,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Update WinGet package
-        uses: vedantmgoyal9/winget-releaser@b3a5dae0047c6180023acba3f548c55fdf6b7193 # v2
+        uses: vedantmgoyal9/winget-releaser@a8fff44b123f115ce4c21543edf8b677376fc7e0 # v2
         with:
           identifier: ctron.oidc
           installers-regex: 'oidc-(x86_64|aarch64)-pc-windows-msvc\.exe$'
